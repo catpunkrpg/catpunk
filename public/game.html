@@ -857,7 +857,7 @@ let pPx   = {x: (MAP_CONFIG.startX || 7) * TILE_SZ, y: (MAP_CONFIG.startY || 5) 
 // For backward compat, pPos still used by monster logic
 let pPos  = pTile;
 
-let pDir = 2, pMoving = false, pFrame = 0, pFrameTimer = 0;
+let pDir = 0, pMoving = false, pFrame = 0, pFrameTimer = 0;
 
 // Smooth movement: player moves at PLAYER_SPEED px per frame toward target
 const PLAYER_SPEED = 3;   // px per frame (at 60fps = ~180px/s = ~5.6 tiles/s)
@@ -2409,7 +2409,7 @@ setInterval(()=>{
     if (!_charChosen) {
       hp = p.hp; maxHp = p.maxHp;
     }
-    // useServerMonsters = true; // disabled
+    // // useServerMonsters = true; // disabled
     monsters.length = 0;
     chat('sys', '🌐 Connected! ' + Object.keys(data.players||{}).length + ' player(s) online');
     updateBars(); updateStats();
@@ -3005,7 +3005,7 @@ function startGame(){
     const mH = MAP_CONFIG.height || MAP_H;
     let nx = pTile.x, ny = pTile.y, dir = pDir;
     if (Math.abs(jx) >= Math.abs(jy)) {
-      if (jx > 0) { nx++; dir = 0; } else { nx--; dir = 1; }
+      if (jx > 0) { nx++; dir = 2; } else { nx--; dir = 1; }
     } else {
       if (jy > 0) { ny++; dir = 2; } else { ny--; dir = 3; }
     }
