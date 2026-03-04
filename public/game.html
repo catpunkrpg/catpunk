@@ -2232,7 +2232,7 @@ setInterval(()=>{
     return;
   }
 
-  socket = io();
+  socket = io('https://catpunk-production.up.railway.app');
 
   // ── Connected ──────────────────────────────────────────────────────────────
   socket.on('init', (data) => {
