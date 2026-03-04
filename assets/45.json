@@ -1,0 +1,45 @@
+{
+  "name": "OMEGA FURY",
+  "symbol": "CATPUNK",
+  "description": "OMEGA FURY — A CatPunk Chaos battle card. Rarity: LEGENDARY. Power: ATK 15000.",
+  "seller_fee_basis_points": 500,
+  "image": "45.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 15000"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356620100"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "4"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "45.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

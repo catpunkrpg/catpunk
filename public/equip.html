@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CatPunk — Card Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://bundle.run/buffer@6.0.3"></script>
+<script>window.Buffer = window.Buffer || buffer.Buffer;</script>
+<script src="https://unpkg.com/@solana/web3.js@1.91.8/lib/index.iife.min.js"></script>
+<script src="nft-cards.js"></script>
+<script src="solana-core.js"></script>
+<style>
+:root {
+  --bg:     #07050f;
+  --panel:  #0e0b1e;
+  --border: #1e1a35;
+  --cyan:   #00f5ff;
+  --purple: #9b30ff;
+  --gold:   #f5c842;
+  --green:  #00ff88;
+  --red:    #ff2255;
+  --common:    #6a6a9a;
+  --rare:      #00f5ff;
+  --epic:      #9b30ff;
+  --legendary: #f5c842;
+  --dim: #6a6a9a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:#fff;font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(155,48,255,.08) 0%,transparent 70%);pointer-events:none;}
+
+/* ── NAV ── */
+
+/* ── LAYOUT ── */
+.page{max-width:1280px;margin:0 auto;padding:28px 20px;}
+.page-title{font-family:'VT323',monospace;font-size:38px;color:var(--cyan);text-shadow:0 0 16px var(--cyan);margin-bottom:4px;}
+.page-sub{font-size:12px;color:var(--dim);margin-bottom:28px;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;margin-bottom:28px;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;}
+.tab{padding:10px 28px;font-family:'VT323',monospace;font-size:18px;background:transparent;border:none;color:var(--dim);cursor:pointer;transition:all .2s;}
+.tab.active{background:rgba(0,245,255,.12);color:var(--cyan);text-shadow:0 0 8px var(--cyan);}
+
+/* ── EQUIPPED CARD BANNER ── */
+#equipped-banner{display:none;background:linear-gradient(135deg,rgba(155,48,255,.15),rgba(0,245,255,.1));border:1px solid var(--purple);border-radius:10px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:20px;}
+#equipped-banner.hidden{display:none!important;}
+.eq-label{font-size:11px;color:var(--dim);margin-bottom:4px;}
+.eq-name{font-family:'VT323',monospace;font-size:24px;color:var(--purple);text-shadow:0 0 10px var(--purple);}
+.eq-stats{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;}
+.eq-stat{font-size:12px;color:var(--gold);}
+.eq-img{width:72px;height:72px;object-fit:cover;border:2px solid var(--purple);border-radius:6px;image-rendering:pixelated;}
+.btn-unequip{margin-left:auto;padding:8px 20px;background:rgba(255,34,85,.1);border:1px solid var(--red);border-radius:5px;color:var(--red);font-family:'VT323',monospace;font-size:16px;cursor:pointer;}
+.btn-unequip:hover{background:rgba(255,34,85,.2);}
+.btn-play{padding:8px 20px;background:rgba(0,255,136,.1);border:1px solid var(--green);border-radius:5px;color:var(--green);font-family:'VT323',monospace;font-size:16px;cursor:pointer;text-decoration:none;display:inline-block;}
+.btn-play:hover{background:rgba(0,255,136,.2);}
+
+/* ── CARD GRID ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+.nft-card{background:var(--panel);border:2px solid var(--border);border-radius:10px;overflow:hidden;transition:all .25s;position:relative;cursor:pointer;}
+.nft-card:hover{transform:translateY(-4px);}
+.nft-card.common{border-color:#3a3a5a;}
+.nft-card.common:hover{border-color:var(--common);box-shadow:0 0 16px rgba(106,106,154,.4);}
+.nft-card.rare{border-color:#006070;}
+.nft-card.rare:hover{border-color:var(--rare);box-shadow:0 0 16px rgba(0,245,255,.35);}
+.nft-card.epic{border-color:#4a1570;}
+.nft-card.epic:hover{border-color:var(--epic);box-shadow:0 0 16px rgba(155,48,255,.4);}
+.nft-card.legendary{border-color:#6a5010;}
+.nft-card.legendary:hover{border-color:var(--gold);box-shadow:0 0 20px rgba(245,200,66,.5);}
+.nft-card.equipped{border-color:var(--green)!important;box-shadow:0 0 18px rgba(0,255,136,.4)!important;}
+.nft-card.staked{opacity:.6;cursor:not-allowed;}
+.nft-card.staked:hover{transform:none;}
+.card-img-wrap{position:relative;padding-top:100%;background:#0a0820;}
+.card-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated;}
+.card-badge{position:absolute;top:8px;right:8px;padding:3px 8px;border-radius:3px;font-size:10px;font-family:'VT323',monospace;}
+.badge-equipped{background:rgba(0,255,136,.2);border:1px solid var(--green);color:var(--green);}
+.badge-staked{background:rgba(155,48,255,.2);border:1px solid var(--purple);color:var(--purple);}
+.badge-locked{background:rgba(255,34,85,.15);border:1px solid var(--red);color:var(--red);}
+.rarity-bar{height:3px;width:100%;}
+.rarity-bar.common{background:var(--common);}
+.rarity-bar.rare{background:linear-gradient(90deg,var(--rare),#0099ff);}
+.rarity-bar.epic{background:linear-gradient(90deg,var(--epic),#5500cc);}
+.rarity-bar.legendary{background:linear-gradient(90deg,var(--gold),#ff8800);}
+.card-body{padding:12px;}
+.card-name{font-family:'VT323',monospace;font-size:16px;color:#fff;margin-bottom:4px;}
+.card-power{font-size:11px;margin-bottom:10px;}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.btn-sm{padding:5px 10px;font-family:'VT323',monospace;font-size:13px;border-radius:4px;border:1px solid;cursor:pointer;background:transparent;transition:all .2s;}
+.btn-equip{border-color:var(--green);color:var(--green);}
+.btn-equip:hover{background:rgba(0,255,136,.15);}
+.btn-stake{border-color:var(--purple);color:var(--purple);}
+.btn-stake:hover{background:rgba(155,48,255,.15);}
+.btn-sell{border-color:var(--gold);color:var(--gold);}
+.btn-sell:hover{background:rgba(245,200,66,.12);}
+.btn-disabled{border-color:#333;color:#444;cursor:not-allowed;}
+
+/* ── STAKING TAB ── */
+.staking-layout{display:grid;grid-template-columns:1fr 360px;gap:24px;}
+@media(max-width:900px){.staking-layout{grid-template-columns:1fr;}}
+.stakes-list{display:flex;flex-direction:column;gap:14px;}
+.stake-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden;}
+.stake-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(155,48,255,.05),transparent);pointer-events:none;}
+.sc-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.sc-img{width:56px;height:56px;object-fit:cover;border-radius:6px;image-rendering:pixelated;border:2px solid;}
+.sc-info{flex:1;}
+.sc-name{font-family:'VT323',monospace;font-size:18px;color:#fff;}
+.sc-meta{font-size:11px;color:var(--dim);}
+.sc-reward-badge{padding:4px 10px;border-radius:20px;font-size:11px;background:rgba(155,48,255,.15);border:1px solid var(--purple);color:var(--purple);}
+.sc-progress-track{background:#111;border-radius:99px;height:8px;margin-bottom:10px;overflow:hidden;}
+.sc-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--purple),var(--cyan));transition:width .5s;}
+.sc-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.sc-stat{background:#0a0820;border:1px solid var(--border);border-radius:5px;padding:8px;}
+.sc-stat-lbl{font-size:10px;color:var(--dim);margin-bottom:2px;}
+.sc-stat-val{font-family:'VT323',monospace;font-size:16px;color:var(--cyan);}
+.sc-earned{font-family:'VT323',monospace;font-size:14px;color:var(--gold);margin-bottom:10px;}
+.sc-actions{display:flex;gap:8px;}
+.btn-claim-nft{flex:1;padding:8px;border:1px solid var(--gold);background:rgba(245,200,66,.1);color:var(--gold);font-family:'VT323',monospace;font-size:15px;border-radius:5px;cursor:pointer;transition:all .2s;}
+.btn-claim-nft:hover{background:rgba(245,200,66,.2);}
+.btn-claim-nft:disabled{opacity:.4;cursor:not-allowed;}
+.btn-unstake-nft{flex:1;padding:8px;border:1px solid var(--green);background:rgba(0,255,136,.1);color:var(--green);font-family:'VT323',monospace;font-size:15px;border-radius:5px;cursor:pointer;transition:all .2s;}
+.btn-unstake-nft:hover{background:rgba(0,255,136,.2);}
+.btn-unstake-nft:disabled{opacity:.4;cursor:not-allowed;border-color:#444;color:#444;}
+
+/* ── STAKE PANEL ── */
+.stake-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:24px;height:fit-content;position:sticky;top:80px;}
+.sp-title{font-family:'VT323',monospace;font-size:22px;color:var(--cyan);margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;}
+.sp-select-label{font-size:11px;color:var(--dim);margin-bottom:6px;}
+.sp-card-select{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:240px;overflow-y:auto;}
+.sp-card-option{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .2s;}
+.sp-card-option:hover{border-color:var(--purple);background:rgba(155,48,255,.08);}
+.sp-card-option.selected{border-color:var(--purple);background:rgba(155,48,255,.15);}
+.sp-card-option.disabled{opacity:.4;cursor:not-allowed;}
+.sp-opt-img{width:36px;height:36px;border-radius:4px;object-fit:cover;image-rendering:pixelated;}
+.sp-opt-name{font-size:12px;color:#fff;}
+.sp-opt-rarity{font-size:10px;}
+.sp-opt-reward{font-size:10px;color:var(--gold);margin-left:auto;}
+.dur-label{font-size:11px;color:var(--dim);margin-bottom:8px;}
+.dur-options{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:16px;}
+.dur-btn{padding:8px;border:1px solid var(--border);background:transparent;color:var(--dim);font-family:'VT323',monospace;font-size:14px;border-radius:5px;cursor:pointer;transition:all .2s;text-align:center;}
+.dur-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.dur-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,245,255,.1);}
+.sp-preview{background:#070515;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;}
+.sp-prev-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.sp-prev-lbl{color:var(--dim);}
+.sp-prev-val{color:var(--gold);font-family:'VT323',monospace;}
+.btn-do-stake{width:100%;padding:12px;background:linear-gradient(135deg,rgba(155,48,255,.3),rgba(0,245,255,.15));border:1px solid var(--purple);color:#fff;font-family:'VT323',monospace;font-size:18px;border-radius:6px;cursor:pointer;transition:all .2s;}
+.btn-do-stake:hover{background:linear-gradient(135deg,rgba(155,48,255,.5),rgba(0,245,255,.25));transform:scale(1.02);}
+.btn-do-stake:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+/* ── EMPTY STATES ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--dim);}
+.empty-icon{font-size:48px;margin-bottom:16px;}
+.empty-title{font-family:'VT323',monospace;font-size:22px;color:#555;margin-bottom:8px;}
+.empty-sub{font-size:12px;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px;width:380px;max-width:90vw;position:relative;}
+.modal-title{font-family:'VT323',monospace;font-size:24px;margin-bottom:16px;}
+.modal-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;}
+.modal-close:hover{color:#fff;}
+.modal-card-preview{display:flex;gap:14px;margin-bottom:16px;background:#070515;border:1px solid var(--border);border-radius:8px;padding:12px;}
+.modal-card-img{width:64px;height:64px;border-radius:6px;object-fit:cover;image-rendering:pixelated;}
+.modal-stats{font-size:12px;color:var(--dim);line-height:1.8;}
+.modal-stats span{color:#fff;}
+.modal-confirm{width:100%;padding:12px;background:linear-gradient(135deg,rgba(155,48,255,.3),rgba(0,245,255,.1));border:1px solid var(--purple);color:#fff;font-family:'VT323',monospace;font-size:18px;border-radius:6px;cursor:pointer;margin-top:12px;}
+.modal-confirm:hover{background:linear-gradient(135deg,rgba(155,48,255,.5),rgba(0,245,255,.2));}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 24px;font-family:'VT323',monospace;font-size:16px;z-index:999;animation:toastin .3s ease;white-space:nowrap;}
+@keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ── WALLET GATE ── */
+#wallet-gate{text-align:center;padding:80px 20px;}
+.gate-icon{font-size:64px;margin-bottom:20px;}
+.gate-title{font-family:'VT323',monospace;font-size:32px;color:var(--cyan);margin-bottom:8px;}
+.gate-sub{font-size:12px;color:var(--dim);margin-bottom:28px;}
+.wallet-options{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px;margin:16px auto 0;}
+.wallet-opt-btn{display:flex;align-items:center;gap:14px;background:var(--panel);border:2px solid var(--border);padding:14px 16px;cursor:pointer;transition:all .15s;width:100%;text-align:left;font-family:'Press Start 2P',monospace;}
+.wallet-opt-btn:hover{border-color:var(--cyan);background:rgba(0,245,255,.04);transform:translateX(4px);}
+.wallet-opt-btn.not-installed{opacity:.45;cursor:not-allowed;}
+.wallet-opt-btn.not-installed:hover{border-color:var(--border);background:var(--panel);transform:none;}
+.wo-icon{width:36px;height:36px;display:grid;place-items:center;font-size:22px;flex-shrink:0;}
+.wo-meta{flex:1;}
+.wo-name{font-size:9px;color:var(--cyan);display:block;margin-bottom:3px;}
+.wo-desc{font-family:'VT323',monospace;font-size:14px;color:var(--dim);letter-spacing:1px;}
+.wo-badge{font-size:7px;padding:2px 6px;border:1px solid;flex-shrink:0;letter-spacing:1px;}
+.badge-ok{border-color:var(--green);color:var(--green);}
+.badge-get{border-color:var(--dim);color:var(--dim);}
+.btn-connect-big{padding:14px 40px;background:rgba(0,245,255,.1);border:2px solid var(--cyan);color:var(--cyan);font-family:'VT323',monospace;font-size:22px;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn-connect-big:hover{background:rgba(0,245,255,.2);transform:scale(1.04);}
+
+/* Rarity colors */
+.txt-common{color:var(--common);}
+.txt-rare{color:var(--rare);}
+.txt-epic{color:var(--epic);}
+.txt-legendary{color:var(--gold);}
+
+/* ═══════════════════════════════════════
+   CATPUNK UNIFIED NAVBAR — mobile-ready
+   ═══════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(8,8,16,.97);
+  border-bottom: 2px solid var(--gold, #f5c842);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.nav-logo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--gold, #f5c842);
+  text-decoration: none;
+  display: flex; align-items: center; gap: 10px;
+  text-shadow: 2px 2px 0 #000;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-logo .cat { animation: bob 2s ease-in-out infinite; display: inline-block; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+.nav-links {
+  display: flex; gap: 4px; align-items: center;
+  list-style: none; margin: 0; padding: 0;
+}
+.nav-links a {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #888;
+  text-decoration: none;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.nav-links a:hover,
+.nav-links a.active { color: var(--cyan, #00f5ff); border-color: var(--cyan, #00f5ff); background: rgba(0,245,255,.07); }
+.nav-wallet-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 8px 14px;
+  border: 2px solid var(--gold, #f5c842);
+  color: var(--gold, #f5c842);
+  background: transparent;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-wallet-btn:hover { background: var(--gold, #f5c842); color: #000; }
+.nav-wallet-btn.connected { border-color: var(--green, #39ff14); color: var(--green, #39ff14); }
+.nav-wallet-btn.connected:hover { border-color: var(--red, #ff3636); color: var(--red, #ff3636); background: transparent; }
+/* ── Hamburger ── */
+.nav-hamburger {
+  display: none;
+  flex-direction: column; justify-content: center; align-items: center;
+  width: 36px; height: 36px;
+  background: none; border: 1px solid #444; border-radius: 4px;
+  cursor: pointer; gap: 5px; padding: 0;
+  flex-shrink: 0;
+}
+.nav-hamburger span {
+  display: block; width: 18px; height: 2px;
+  background: var(--gold, #f5c842);
+  transition: all .25s;
+}
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+/* ── Mobile drawer ── */
+.nav-mobile-drawer {
+  display: none;
+  position: fixed; top: 54px; left: 0; right: 0;
+  background: rgba(8,8,16,.99);
+  border-bottom: 2px solid var(--gold, #f5c842);
+  flex-direction: column;
+  padding: 16px 24px 20px;
+  gap: 8px;
+  z-index: 999;
+}
+.nav-mobile-drawer.open { display: flex; }
+.nav-mobile-drawer a {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #888;
+  text-decoration: none;
+  letter-spacing: 1px;
+  padding: 10px 0;
+  border-bottom: 1px solid #1a1a2e;
+  transition: color .2s;
+}
+.nav-mobile-drawer a:hover,
+.nav-mobile-drawer a.active { color: var(--cyan, #00f5ff); }
+.nav-mobile-drawer .nav-mobile-wallet {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 2px solid var(--gold, #f5c842);
+  color: var(--gold, #f5c842);
+  background: transparent;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+/* ── Responsive breakpoints ── */
+@media (max-width: 820px) {
+  .nav-links { display: none; }
+  .nav-hamburger { display: flex; }
+}
+@media (max-width: 480px) {
+  nav { padding: 0 14px; }
+  .nav-logo { font-size: 9px; }
+  .nav-wallet-btn { display: none; }
+}
+/* Body offset for fixed nav */
+body { padding-top: 54px; }
+
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html"><span class="cat">😼</span> CATPUNK</a>
+  <ul class="nav-links">
+    <li><a href="index.html">HOME</a></li>
+    <li><a href="game.html">PLAY</a></li>
+    <li><a href="mint.html">MINT</a></li>
+    <li><a href="equip.html" class="active">CARDS</a></li>
+    <li><a href="staking.html">STAKING</a></li>
+    <li><a href="wallet.html">WALLET</a></li>
+  </ul>
+  <button class="nav-wallet-btn" id="nav-wallet-btn" onclick="handleNavWallet()">CONNECT WALLET</button>
+  <button class="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="nav-mobile-drawer">
+  <a href="index.html">HOME</a>
+  <a href="game.html">PLAY</a>
+  <a href="mint.html">MINT</a>
+  <a href="equip.html" class="active">CARDS</a>
+  <a href="staking.html">STAKING</a>
+  <a href="wallet.html">WALLET</a>
+  <button class="nav-mobile-wallet" onclick="handleNavWallet()">CONNECT WALLET</button>
+</div>
+
+<div class="page">
+  <div class="page-title">⚔️ CARD MANAGER</div>
+  <div class="page-sub">Equip cards to power up your character · Stake to earn $CPUNK · Sell on Magic Eden</div>
+
+  <!-- Equipped Banner -->
+  <div id="equipped-banner" class="hidden">
+    <img id="eq-img" class="eq-img" src="" alt="">
+    <div>
+      <div class="eq-label">CURRENTLY EQUIPPED</div>
+      <div id="eq-name" class="eq-name">—</div>
+      <div class="eq-stats">
+        <span id="eq-power" class="eq-stat">—</span>
+        <span id="eq-rarity" class="eq-stat">—</span>
+      </div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:10px;align-items:center;">
+      <a href="game.html" class="btn-play">▶ PLAY NOW</a>
+      <button class="btn-unequip" onclick="doUnequip()">✕ UNEQUIP</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('my-cards',this)">MY CARDS</button>
+    <button class="tab" onclick="switchTab('nft-staking',this)">NFT STAKING</button>
+  </div>
+
+  <!-- MY CARDS TAB -->
+  <div id="tab-my-cards">
+    <div id="wallet-gate" style="text-align:center;padding:60px 20px;">
+      <div class="gate-icon">🔐</div>
+      <div class="gate-title">WALLET REQUIRED</div>
+      <div class="gate-sub">Connect your wallet to view your NFT cards</div>
+      <div class="wallet-options" id="cards-wallet-list"></div>
+    </div>
+    <div id="cards-container" style="display:none;">
+      <div id="cards-grid" class="cards-grid"></div>
+    </div>
+  </div>
+
+  <!-- NFT STAKING TAB -->
+  <div id="tab-nft-staking" style="display:none;">
+    <div id="staking-gate">
+      <div class="empty-state">
+        <div class="empty-icon">🔐</div>
+        <div class="empty-title">CONNECT WALLET</div>
+        <div class="empty-sub">Connect your wallet to stake NFT cards</div>
+        <div class="wallet-options" id="staking-wallet-list" style="margin-top:20px;"></div>
+      </div>
+    </div>
+    <div id="staking-container" style="display:none;">
+      <div class="staking-layout">
+        <div>
+          <div style="font-family:'VT323',monospace;font-size:20px;color:var(--cyan);margin-bottom:14px;">ACTIVE STAKES</div>
+          <div id="stakes-list" class="stakes-list"></div>
+        </div>
+        <div class="stake-panel">
+          <div class="sp-title">🔒 STAKE A CARD</div>
+          <div class="sp-select-label">SELECT CARD</div>
+          <div id="sp-card-list" class="sp-card-select"></div>
+          <div class="dur-label">LOCK DURATION</div>
+          <div class="dur-options">
+            <button class="dur-btn active" data-days="7" onclick="selectDur(7,this)">7 DAYS</button>
+            <button class="dur-btn" data-days="14" onclick="selectDur(14,this)">14 DAYS</button>
+            <button class="dur-btn" data-days="30" onclick="selectDur(30,this)">30 DAYS</button>
+            <button class="dur-btn" data-days="90" onclick="selectDur(90,this)">90 DAYS</button>
+          </div>
+          <div class="sp-preview">
+            <div class="sp-prev-row"><span class="sp-prev-lbl">DAILY REWARD</span><span id="prev-daily" class="sp-prev-val">—</span></div>
+            <div class="sp-prev-row"><span class="sp-prev-lbl">TOTAL REWARD</span><span id="prev-total" class="sp-prev-val">—</span></div>
+            <div class="sp-prev-row"><span class="sp-prev-lbl">UNLOCK DATE</span><span id="prev-unlock" class="sp-prev-val">—</span></div>
+          </div>
+          <button class="btn-do-stake" id="btn-do-stake" onclick="doStakeCard()">STAKE CARD</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stake confirm modal -->
+<div class="modal-overlay" id="stake-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('stake-modal')">✕</button>
+    <div class="modal-title" id="stake-modal-title">Stake Card</div>
+    <div class="modal-card-preview">
+      <img id="sm-img" class="modal-card-img" src="" alt="">
+      <div class="modal-stats" id="sm-stats"></div>
+    </div>
+    <div class="modal-stats" id="sm-reward-info"></div>
+    <button class="modal-confirm" id="sm-confirm" onclick="confirmStake()">CONFIRM STAKE</button>
+  </div>
+</div>
+
+<script>
+const DAILY_REWARDS = { common:10, rare:35, epic:80, legendary:200 };
+const RARITY_COLOR  = { common:'var(--common)', rare:'var(--rare)', epic:'var(--epic)', legendary:'var(--gold)' };
+
+let currentTab      = 'my-cards';
+let selectedDur     = 7;
+let selectedCard    = null;
+let stakeConfirmCard= null;
+let ownedNFTs       = [];
+
+// ── TAB SWITCH ────────────────────────────────────────────────────────────────
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-my-cards').style.display    = tab==='my-cards'    ? '' : 'none';
+  document.getElementById('tab-nft-staking').style.display = tab==='nft-staking' ? '' : 'none';
+  if (tab === 'nft-staking' && CatPunkWallet.connected) renderNFTStaking();
+}
+
+// ── EQUIPPED BANNER ───────────────────────────────────────────────────────────
+function refreshEquippedBanner() {
+  const card = getEquippedCard();
+  const banner = document.getElementById('equipped-banner');
+  if (card) {
+    banner.classList.remove('hidden');
+    document.getElementById('eq-img').src = card.img;
+    document.getElementById('eq-name').textContent = card.name;
+    document.getElementById('eq-power').textContent = '⚡ ' + card.power;
+    document.getElementById('eq-rarity').textContent = card.rarity.toUpperCase();
+    document.getElementById('eq-rarity').style.color = RARITY_COLOR[card.rarity];
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+function doUnequip() {
+  unequipCard();
+  refreshEquippedBanner();
+  renderMyCards();
+  showToast('Card unequipped');
+}
+
+// ── MY CARDS RENDER ───────────────────────────────────────────────────────────
+function renderMyCards() {
+  if (!CatPunkWallet.connected) return;
+  document.getElementById('wallet-gate').style.display  = 'none';
+  document.getElementById('cards-container').style.display = '';
+
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = '';
+
+  if (ownedNFTs.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <div class="empty-icon">🃏</div>
+      <div class="empty-title">NO CARDS YET</div>
+      <div class="empty-sub">Mint NFT cards to get started</div>
+      <a href="mint.html" style="display:inline-block;margin-top:20px;padding:10px 28px;border:1px solid var(--cyan);color:var(--cyan);font-family:'VT323',monospace;font-size:18px;border-radius:5px;text-decoration:none;">GO TO MINT</a>
+    </div>`;
+    return;
+  }
+
+  const equippedCard = getEquippedCard();
+  const nftStakes    = getActiveNFTStakes();
+
+  ownedNFTs.forEach(card => {
+    const isEquipped = equippedCard && equippedCard.name === card.name;
+    const isStaked   = isCardStaked(card.name);
+    const stake      = nftStakes.find(s => s.cardName === card.name);
+    const meUrl      = getMagicEdenUrl(card.mint || card.id);
+
+    let classes = `nft-card ${card.rarity}`;
+    if (isEquipped) classes += ' equipped';
+    if (isStaked)   classes += ' staked';
+
+    const el = document.createElement('div');
+    el.className = classes;
+    el.innerHTML = `
+      <div class="card-img-wrap">
+        <img class="card-img" src="${card.img}" alt="${card.name}"
+          onerror="this.style.opacity='.3'">
+        ${isEquipped ? '<div class="card-badge badge-equipped">✓ EQUIPPED</div>' : ''}
+        ${isStaked   ? '<div class="card-badge badge-staked">🔒 STAKED</div>' : ''}
+      </div>
+      <div class="rarity-bar ${card.rarity}"></div>
+      <div class="card-body">
+        <div class="card-name">${card.name}</div>
+        <div class="card-power txt-${card.rarity}">${card.power}</div>
+        <div class="card-actions">
+          ${isStaked ? `
+            <span class="btn-sm btn-disabled">STAKED</span>
+          ` : isEquipped ? `
+            <button class="btn-sm btn-equip" style="border-color:var(--red);color:var(--red);" onclick="doUnequip()">UNEQUIP</button>
+            <button class="btn-sm btn-stake" onclick="openStakeModal(${JSON.stringify(card).replace(/"/g,'&quot;')})">STAKE</button>
+          ` : `
+            <button class="btn-sm btn-equip" onclick="doEquip(${JSON.stringify(card).replace(/"/g,'&quot;')})">EQUIP</button>
+            <button class="btn-sm btn-stake" onclick="openStakeModal(${JSON.stringify(card).replace(/"/g,'&quot;')})">STAKE</button>
+          `}
+          <a class="btn-sm btn-sell" href="${meUrl}" target="_blank">SELL ↗</a>
+        </div>
+      </div>`;
+    grid.appendChild(el);
+  });
+}
+
+function doEquip(card) {
+  if (isCardStaked(card.name)) { showToast('❌ Card is staked — unstake first', 'error'); return; }
+  equipCard(card);
+  refreshEquippedBanner();
+  renderMyCards();
+  showToast(`✅ ${card.name} equipped!`);
+}
+
+// ── NFT STAKING RENDER ────────────────────────────────────────────────────────
+function renderNFTStaking() {
+  if (!CatPunkWallet.connected) return;
+  document.getElementById('staking-gate').style.display      = 'none';
+  document.getElementById('staking-container').style.display = '';
+
+  renderStakesList();
+  renderStakePanel();
+}
+
+function renderStakesList() {
+  const list   = document.getElementById('stakes-list');
+  const stakes = getActiveNFTStakes();
+
+  if (stakes.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">😴</div>
+      <div class="empty-title">NO ACTIVE STAKES</div>
+      <div class="empty-sub">Select a card and duration to start earning $CPUNK</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  stakes.forEach(stake => {
+    const now      = Date.now();
+    const sinceMs  = stake.lastClaim || stake.startTime;
+    const elapsed  = (now - sinceMs) / 86400000;
+    const earned   = Math.max(0, stake.dailyReward * elapsed);
+    const progress = Math.min(100, ((now - stake.startTime) / (stake.endTime - stake.startTime)) * 100);
+    const isUnlocked = now >= stake.endTime;
+    const daysLeft = isUnlocked ? 0 : Math.ceil((stake.endTime - now) / 86400000);
+    const unlockDate = new Date(stake.endTime).toLocaleDateString('en-US', {month:'short',day:'numeric'});
+
+    const el = document.createElement('div');
+    el.className = 'stake-card';
+    el.innerHTML = `
+      <div class="sc-top">
+        <img class="sc-img" src="${stake.cardImg}" alt="${stake.cardName}"
+          style="border-color:${RARITY_COLOR[stake.cardRarity] || '#444'};"
+          onerror="this.style.opacity='.3'">
+        <div class="sc-info">
+          <div class="sc-name txt-${stake.cardRarity}">${stake.cardName}</div>
+          <div class="sc-meta">${stake.durationDays}-day lock · ${stake.cardRarity.toUpperCase()}</div>
+        </div>
+        <div class="sc-reward-badge">+${stake.dailyReward} CPUNK/day</div>
+      </div>
+      <div class="sc-progress-track">
+        <div class="sc-progress-fill" style="width:${progress.toFixed(1)}%"></div>
+      </div>
+      <div class="sc-stats">
+        <div class="sc-stat">
+          <div class="sc-stat-lbl">PROGRESS</div>
+          <div class="sc-stat-val">${progress.toFixed(0)}%</div>
+        </div>
+        <div class="sc-stat">
+          <div class="sc-stat-lbl">${isUnlocked ? 'STATUS' : 'DAYS LEFT'}</div>
+          <div class="sc-stat-val" style="${isUnlocked?'color:var(--green)':''}">
+            ${isUnlocked ? '✅ UNLOCKED' : daysLeft+'D'}
+          </div>
+        </div>
+        <div class="sc-stat">
+          <div class="sc-stat-lbl">UNLOCK DATE</div>
+          <div class="sc-stat-val" style="font-size:13px;">${unlockDate}</div>
+        </div>
+        <div class="sc-stat">
+          <div class="sc-stat-lbl">TOTAL EARN</div>
+          <div class="sc-stat-val">${stake.dailyReward * stake.durationDays} CPUNK</div>
+        </div>
+      </div>
+      <div class="sc-earned">+${formatNumber(earned, 3)} CPUNK earned (unclaimed)</div>
+      <div class="sc-actions">
+        <button class="btn-claim-nft" ${earned < 0.01 ? 'disabled' : ''}
+          onclick="doClaimNFT('${stake.id}')">CLAIM REWARD</button>
+        <button class="btn-unstake-nft" ${!isUnlocked ? 'disabled' : ''}
+          ${!isUnlocked ? `title="Locked for ${daysLeft} more day${daysLeft>1?'s':''}"` : ''}
+          onclick="doUnstakeNFT('${stake.id}')">
+          ${isUnlocked ? 'UNSTAKE ✓' : '🔒 LOCKED'}
+        </button>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+function renderStakePanel() {
+  const cardList  = document.getElementById('sp-card-list');
+  const stakes    = getActiveNFTStakes();
+  const available = ownedNFTs.filter(c => !stakes.find(s => s.cardName === c.name));
+
+  cardList.innerHTML = '';
+  if (available.length === 0) {
+    cardList.innerHTML = `<div style="font-size:11px;color:var(--dim);padding:12px;text-align:center;">
+      All cards are staked or you have no cards yet</div>`;
+    document.getElementById('btn-do-stake').disabled = true;
+    return;
+  }
+
+  available.forEach(card => {
+    const daily = DAILY_REWARDS[card.rarity] || 10;
+    const el = document.createElement('div');
+    el.className = 'sp-card-option' + (selectedCard && selectedCard.name === card.name ? ' selected' : '');
+    el.onclick = () => selectCardForStake(card);
+    el.innerHTML = `
+      <img class="sp-opt-img" src="${card.img}" alt="${card.name}" onerror="this.style.opacity='.3'">
+      <div>
+        <div class="sp-opt-name">${card.name}</div>
+        <div class="sp-opt-rarity txt-${card.rarity}">${card.rarity.toUpperCase()}</div>
+      </div>
+      <div class="sp-opt-reward">+${daily}/day</div>`;
+    cardList.appendChild(el);
+  });
+
+  updateStakePreview();
+}
+
+function selectCardForStake(card) {
+  selectedCard = card;
+  document.querySelectorAll('.sp-card-option').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  updateStakePreview();
+}
+
+function selectDur(days, btn) {
+  selectedDur = days;
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateStakePreview();
+}
+
+function updateStakePreview() {
+  if (!selectedCard) {
+    document.getElementById('prev-daily').textContent  = '—';
+    document.getElementById('prev-total').textContent  = '—';
+    document.getElementById('prev-unlock').textContent = '—';
+    document.getElementById('btn-do-stake').disabled   = true;
+    return;
+  }
+  const daily   = DAILY_REWARDS[selectedCard.rarity] || 10;
+  const total   = daily * selectedDur;
+  const unlock  = new Date(Date.now() + selectedDur * 86400000).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('prev-daily').textContent  = `+${daily} CPUNK`;
+  document.getElementById('prev-total').textContent  = `+${total} CPUNK`;
+  document.getElementById('prev-unlock').textContent = unlock;
+  document.getElementById('btn-do-stake').disabled   = false;
+}
+
+// ── STAKE MODAL ───────────────────────────────────────────────────────────────
+function openStakeModal(card) {
+  if (isCardStaked(card.name)) { showToast('❌ Already staked', 'error'); return; }
+  stakeConfirmCard = card;
+  const daily = DAILY_REWARDS[card.rarity] || 10;
+  const total = daily * selectedDur;
+  document.getElementById('stake-modal-title').textContent = `Stake ${card.name}`;
+  document.getElementById('sm-img').src = card.img;
+  document.getElementById('sm-stats').innerHTML = `
+    <div>Card: <span>${card.name}</span></div>
+    <div>Rarity: <span class="txt-${card.rarity}">${card.rarity.toUpperCase()}</span></div>
+    <div>Power: <span>${card.power}</span></div>`;
+  document.getElementById('sm-reward-info').innerHTML = `
+    <div style="margin-top:10px;padding:10px;background:#070515;border-radius:6px;border:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:6px;">STAKE DETAILS</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span style="color:var(--dim)">Duration</span><span style="color:var(--gold);font-family:'VT323',monospace;">${selectedDur} days</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span style="color:var(--dim)">Daily Reward</span><span style="color:var(--gold);font-family:'VT323',monospace;">+${daily} $CPUNK</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;">
+        <span style="color:var(--dim)">Total Reward</span><span style="color:var(--gold);font-family:'VT323',monospace;">+${total} $CPUNK</span>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--dim);margin-top:10px;">⚠️ Card will be locked and cannot be equipped or sold during staking period.</p>`;
+  document.getElementById('stake-modal').classList.add('open');
+}
+
+async function confirmStake() {
+  if (!stakeConfirmCard) return;
+  const btn = document.getElementById('sm-confirm');
+  btn.disabled = true;
+  btn.textContent = 'STAKING...';
+  try {
+    await stakeNFTCard(stakeConfirmCard, selectedDur, msg => showToast('⏳ ' + msg));
+    showToast(`✅ ${stakeConfirmCard.name} staked for ${selectedDur} days!`);
+    closeModal('stake-modal');
+    renderMyCards();
+    if (currentTab === 'nft-staking') renderNFTStaking();
+  } catch(e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'CONFIRM STAKE';
+  }
+}
+
+function doStakeCard() {
+  if (!selectedCard) { showToast('❌ Select a card first', 'error'); return; }
+  openStakeModal(selectedCard);
+}
+
+async function doClaimNFT(stakeId) {
+  try {
+    showToast('⏳ Claiming rewards...');
+    const result = await claimNFTStakeRewards(stakeId);
+    showToast(`✅ Claimed ${formatNumber(result.reward, 3)} $CPUNK!`);
+    renderNFTStaking();
+  } catch(e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+async function doUnstakeNFT(stakeId) {
+  try {
+    showToast('⏳ Unstaking...');
+    const result = await unstakeNFTCard(stakeId);
+    showToast(`✅ ${result.cardName} unstaked! +${formatNumber(result.reward,3)} CPUNK`);
+    renderMyCards();
+    renderNFTStaking();
+  } catch(e) { showToast('❌ ' + e.message, 'error'); }
+}
+
+// ── WALLET ────────────────────────────────────────────────────────────────────
+function renderWalletOptions() {
+  ['cards-wallet-list', 'staking-wallet-list'].forEach(id => {
+    const list = document.getElementById(id);
+    if (!list) return;
+    list.innerHTML = '';
+    SUPPORTED_WALLETS.forEach(w => {
+      const installed = w.detect();
+      const btn = document.createElement('button');
+      btn.className = 'wallet-opt-btn' + (installed ? '' : ' not-installed');
+      btn.innerHTML = `
+        <div class="wo-icon">${w.icon}</div>
+        <div class="wo-meta">
+          <span class="wo-name">${w.name}</span>
+          <span class="wo-desc">${installed ? 'Detected in browser' : 'Not installed'}</span>
+        </div>
+        <span class="wo-badge ${installed ? 'badge-ok' : 'badge-get'}">${installed ? 'READY' : 'GET'}</span>
+      `;
+      if (installed) btn.onclick = () => doConnect(w.id);
+      else btn.onclick = () => window.open(w.installUrl, '_blank');
+      list.appendChild(btn);
+    });
+  });
+}
+
+async function doConnect(walletId) {
+  const navBtn = document.getElementById('nav-wallet-btn');
+  navBtn.textContent = 'CONNECTING...';
+  navBtn.disabled = true;
+  try {
+    await connectWalletById(walletId);
+    await fetchWalletNFTs();
+    onWalletConnected();
+    showToast('✅ Wallet connected!');
+  } catch(e) {
+    showToast('❌ ' + e.message, 'error');
+  } finally {
+    navBtn.disabled = false;
+  }
+}
+
+async function handleNavWallet() {
+  if (CatPunkWallet.connected) { window.location.href = 'wallet.html'; return; }
+  document.getElementById('wallet-gate')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function onWalletConnected() {
+  ownedNFTs = CatPunkWallet.nfts || [];
+  const btn = document.getElementById('nav-wallet-btn');
+  btn.textContent = formatAddress(CatPunkWallet.publicKeyStr) + ' ✓';
+  btn.className = 'nav-wallet-btn connected';
+  refreshEquippedBanner();
+  renderMyCards();
+  if (currentTab === 'nft-staking') renderNFTStaking();
+}
+
+CatPunkWallet.on('connected', async () => {
+  await fetchWalletNFTs();
+  onWalletConnected();
+});
+CatPunkWallet.on('nftsLoaded', nfts => {
+  ownedNFTs = nfts;
+  renderMyCards();
+  if (currentTab === 'nft-staking') renderNFTStaking();
+});
+CatPunkWallet.on('cardEquipped', () => { refreshEquippedBanner(); renderMyCards(); });
+CatPunkWallet.on('cardUnequipped', () => { refreshEquippedBanner(); renderMyCards(); });
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function formatNumber(n, d=2) {
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits:0, maximumFractionDigits:d });
+}
+function showToast(msg, type='ok') {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.borderColor = type==='error' ? 'var(--red)' : 'var(--green)';
+  t.style.color = type==='error' ? 'var(--red)' : 'var(--green)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); }, 3000);
+}
+
+// Click outside modal to close
+document.getElementById('stake-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal('stake-modal');
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderWalletOptions();
+window.addEventListener('load', async () => {
+  const restored = await tryRestoreSession();
+  if (restored) {
+    await fetchWalletNFTs();
+    onWalletConnected();
+  }
+});
+
+// Auto-refresh stakes every 30s for live countdown
+setInterval(() => {
+  if (CatPunkWallet.connected && currentTab === 'nft-staking') renderStakesList();
+}, 30000);
+</script>
+<script>
+// ── CATPUNK Unified Navbar Mobile Toggle ──
+(function(){
+  var ham = document.querySelector('.nav-hamburger');
+  var drawer = document.querySelector('.nav-mobile-drawer');
+  if (!ham || !drawer) return;
+  ham.addEventListener('click', function(){
+    ham.classList.toggle('open');
+    drawer.classList.toggle('open');
+  });
+  // close drawer on link click
+  drawer.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      ham.classList.remove('open');
+      drawer.classList.remove('open');
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+  "name": "TURBO PAW",
+  "symbol": "CATPUNK",
+  "description": "TURBO PAW — A CatPunk Chaos battle card. Rarity: RARE. Power: SPD +55%.",
+  "seller_fee_basis_points": 500,
+  "image": "27.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Power",
+      "value": "SPD +55%"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619947"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "2"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "27.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "PLASMA NOVA",
+  "symbol": "CATPUNK",
+  "description": "PLASMA NOVA — A CatPunk Chaos battle card. Rarity: EPIC. Power: ATK 4800.",
+  "seller_fee_basis_points": 500,
+  "image": "36.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 4800"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619997"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "3"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "36.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

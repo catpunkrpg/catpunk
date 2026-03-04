@@ -1,0 +1,45 @@
+{
+  "name": "CYBER FANG",
+  "symbol": "CATPUNK",
+  "description": "CYBER FANG — A CatPunk Chaos battle card. Rarity: RARE. Power: ATK 3400.",
+  "seller_fee_basis_points": 500,
+  "image": "28.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 3400"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619949"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "2"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "28.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

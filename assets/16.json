@@ -1,0 +1,45 @@
+{
+  "name": "CODE CLAW",
+  "symbol": "CATPUNK",
+  "description": "CODE CLAW — A CatPunk Chaos battle card. Rarity: COMMON. Power: ATK 960.",
+  "seller_fee_basis_points": 500,
+  "image": "16.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 960"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619917"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "1"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "16.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

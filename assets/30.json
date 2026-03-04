@@ -1,0 +1,45 @@
+{
+  "name": "NEON BURST",
+  "symbol": "CATPUNK",
+  "description": "NEON BURST — A CatPunk Chaos battle card. Rarity: RARE. Power: ATK 2900.",
+  "seller_fee_basis_points": 500,
+  "image": "30.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 2900"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619951"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "2"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "30.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

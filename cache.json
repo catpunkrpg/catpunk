@@ -1,0 +1,386 @@
+{
+  "program": {
+    "candyMachine": "Cfhi9FNPnxABgsoLfLycCp6Wor133tzUo3YzasHRCqoM",
+    "candyGuard": "",
+    "candyMachineCreator": "G3Sizcz7HpoycKwV9kPwLWioRKZHJcz1EzNBn6jnrWxy",
+    "collectionMint": "DocCH4ukiuh8bRMU6anBdNBHmowRkNc6UD98WCWf5pdt"
+  },
+  "items": {
+    "-1": {
+      "name": "CatPunk Chaos",
+      "image_hash": "808ab77059699c035059d87be5ac1ec0d01dfa40279f603a0aac05ce2ffe9592",
+      "image_link": "https://gateway.irys.xyz/9rBHZUiwZkj2AfGJsSVabn8FNVQTw9CWhViMvLzzPQb5?ext=png",
+      "metadata_hash": "431b212e4bf761c15b213f5e669eb07a5d187fb26821893b16b3721e3e9306af",
+      "metadata_link": "https://gateway.irys.xyz/FFb5tu8SfkP3U92fAVN9wppiPr1B6buW6ZmUYLuHG5LT",
+      "onChain": true
+    },
+    "0": {
+      "name": "CLAW STRIKE",
+      "image_hash": "58cb5cee298e518dfb4e952e0796f10bfef524e69f697dfb802a9bf2a9e6ed8e",
+      "image_link": "https://gateway.irys.xyz/9XTCgSwAQv7QT1trsT5ZMRNVr9U6LM1rAkSfjASrL9oo?ext=png",
+      "metadata_hash": "19573e6486928ccbb38eb02a2c9860a58e9cdcac56c3073277acd297a77666e2",
+      "metadata_link": "https://gateway.irys.xyz/3FSVY9MtrkkzUwMrKGxbwzhWHpwGASrD2sNEoJUauYyg",
+      "onChain": true
+    },
+    "1": {
+      "name": "PAW SLASH",
+      "image_hash": "003719f4187949683e9d1c03add921fc3bc53388783e1a43fc3bb31b2b370697",
+      "image_link": "https://gateway.irys.xyz/8r64TgUsJ9kYBptwJH7Vhkgg2jFVwubGsGAVsmswukSb?ext=png",
+      "metadata_hash": "b706848f37c1742b0d241ecd0a2a270641782a6030d33fcdb1bf0032875b4887",
+      "metadata_link": "https://gateway.irys.xyz/3rJeqRqX9zyjQkrB7JEvtKMvqEyVK6W9rWLVia6PF351",
+      "onChain": true
+    },
+    "2": {
+      "name": "QUICK SCRATCH",
+      "image_hash": "d1a362e2d240592a35fbea53b8a3adfd4715a0206915de6b0d23a0c3fc80c9ee",
+      "image_link": "https://gateway.irys.xyz/DRbTaFFfeJtmB6ots27nujbZPKcmE5rzF77hyzooVS5X?ext=png",
+      "metadata_hash": "ad02ea0e475fcbda2e15c9a3a93072b6a17d1e44789f441746ec4c9d915c6630",
+      "metadata_link": "https://gateway.irys.xyz/HcmTdQWiyvgpyK5yPqPa1TfG9Epw1aMJcsE7Sk1Yja8f",
+      "onChain": true
+    },
+    "3": {
+      "name": "WHISKER WHIP",
+      "image_hash": "4e68e555814bfced7ce5e50334615979b642348f4d9edf3b95e5b9249dd36b98",
+      "image_link": "https://gateway.irys.xyz/HSrFmDPty2HEDRYCe5G8qmZcy7nD35rdX1rKnYXaMUiK?ext=png",
+      "metadata_hash": "d255f11f7272617299c041509617dc2379acb7afef2eb886be4c2eddd08f9605",
+      "metadata_link": "https://gateway.irys.xyz/27cbW5Q8Rf2UnRAFTYHj3VYmWSuTzpd9M3UshzBqYZBD",
+      "onChain": true
+    },
+    "4": {
+      "name": "TAIL SPIN",
+      "image_hash": "ce1b399cc344e21097dd5cc46becb46419122ddde4e6b5cff5829c0a1c7c5554",
+      "image_link": "https://gateway.irys.xyz/e91DkhvdCv1ynVEnb719B8WPdYkmrZXhL8ts9FPB34m?ext=png",
+      "metadata_hash": "7fa468845a136233dd918bfc088b5219f5bb515249216110aa378d39bed39a7d",
+      "metadata_link": "https://gateway.irys.xyz/HNuN7vdVLS9VTXuqCyd1yzR5sF6Eym7abmEKzymCyf8W",
+      "onChain": true
+    },
+    "5": {
+      "name": "FUR SHIELD",
+      "image_hash": "6dad34ba913db10bf8fa64529c46e3eac72facdc455f05172ca9aac0a126378e",
+      "image_link": "https://gateway.irys.xyz/GTn8DNbNAFqCCZ7xgdPXjXtKsYoCo4DeYTATbJZZSprd?ext=png",
+      "metadata_hash": "9f8f0515a0759d2b3da42b3956be148ecc7aafc2833c08ce2d660d7d8602d59f",
+      "metadata_link": "https://gateway.irys.xyz/AkWohLR5cjcF3qRXgddquE4iQeWju2xpb1aE8YZULBXB",
+      "onChain": true
+    },
+    "6": {
+      "name": "CATNAP GUARD",
+      "image_hash": "b138a7c6f2afc2d3c0973c4b1683f15df527e943cd576387697355bc049412e4",
+      "image_link": "https://gateway.irys.xyz/9LkKPxw4J3Sx5KDCsT463Y75YDRiXK11dBD5uMiJtMqD?ext=png",
+      "metadata_hash": "ce3bbd082b00fd12490e72e49aea0f40ea0a6d9b9c71a8a741a3f01b86271ecc",
+      "metadata_link": "https://gateway.irys.xyz/4AfuPn7jqaZ9rez1qx4mpqLXuARJQDvmakxMVnJSD3rC",
+      "onChain": true
+    },
+    "7": {
+      "name": "HISS BLAST",
+      "image_hash": "7e64f06fb06e05e6624d1b32ef7c90058de688fa2616d44e6a3ab65e1b5e23b8",
+      "image_link": "https://gateway.irys.xyz/72NJPWKgJJu58K2vCGG3GnAPh5W7p4om8ocu5mo16Vis?ext=png",
+      "metadata_hash": "edbaef59a200e269cf00ab413f9f91f9595ff81227a76b896194bb44f93b89fc",
+      "metadata_link": "https://gateway.irys.xyz/27Am4NqjnbDJxYzSE4N75yHzWFKS8xVXj23gfsQecuWY",
+      "onChain": true
+    },
+    "8": {
+      "name": "BASIC POUNCE",
+      "image_hash": "f54cb80f18df10212bf23a3b23231c2cf99ffdfc8083127844006844193f438c",
+      "image_link": "https://gateway.irys.xyz/6JUzLjQkWGT8UTAXtViFYaadYthAgUgB71YCmFHRoRme?ext=png",
+      "metadata_hash": "729d72d62a021dceabff9045e6fb000bbfc2d28cc9532e49fd174eaa7612c460",
+      "metadata_link": "https://gateway.irys.xyz/4uyGGJuy6g59Dcp7Kgzx3qmJfehccqcVaWbKwzo777T2",
+      "onChain": true
+    },
+    "9": {
+      "name": "PIXEL PAW",
+      "image_hash": "c1f3b899754d6e2ede8414fab5702c7d6bc28c4461616922608b3f3f1fe03b50",
+      "image_link": "https://gateway.irys.xyz/Fjp3Rs5BcBmveQZtyazPZBaNMHudAT77JE8ywv5eYqxb?ext=png",
+      "metadata_hash": "8c6540e046c1540f75dd8c836656b1a7a0f98e3cbe1fc6e7263cf8e0d712fadb",
+      "metadata_link": "https://gateway.irys.xyz/9BxPeiipFwpjtAt8wFRTtP1v45xkAJwJ8d4CZcFM4FRM",
+      "onChain": true
+    },
+    "10": {
+      "name": "CYBER SWIPE",
+      "image_hash": "33803319b3b20351e371d4a4b6b07b9b260af8611b205e2eb7775ac18cde7c4f",
+      "image_link": "https://gateway.irys.xyz/HjR3p7v4AocZkcXztzceSmd4qgvai6ufkkiXrYJQWK39?ext=png",
+      "metadata_hash": "b1450651f7c02565d5841c9f05e70caaa94792c5768fd621c19831671e5e65a0",
+      "metadata_link": "https://gateway.irys.xyz/ALVvg3aAJxXDV5xhtG4zfRbPUXfqbZuQ6SUhdJnYjU2s",
+      "onChain": true
+    },
+    "11": {
+      "name": "GLITCH CLAW",
+      "image_hash": "0dd9075cb73162237ea2043ed9ac98ce337854839db3db41de4b7d3829fc2ba6",
+      "image_link": "https://gateway.irys.xyz/8eXuifx2azFMEDKg6F2rvLbmBdsUJCnxhfJd5VdTfvVW?ext=png",
+      "metadata_hash": "55c5f00e92f4cfc137d1c5310881fc4cc4c5ef94f887c0f88d815b20d0ab6362",
+      "metadata_link": "https://gateway.irys.xyz/9RwF2pDokhGF2SWLsSvmZGXMPuQy3edRLmiGDT9mSvYx",
+      "onChain": true
+    },
+    "12": {
+      "name": "STATIC FUR",
+      "image_hash": "92fd0405d224b019f5c62432e6255d6d78eeaf26b15d5c17893ee2825faab253",
+      "image_link": "https://gateway.irys.xyz/62CB6mwYCk9b1LSgGSrWb9AxSZS8nHoUJnnWjbgTYZDD?ext=png",
+      "metadata_hash": "7bb2220c13e38fa302e44d17f8c8ef3839a02854a589629596d546ed65a7f5da",
+      "metadata_link": "https://gateway.irys.xyz/2jgxHudsjGPYAqLgGZn3bYS5JgSVhrScZm91WvEqKh6P",
+      "onChain": true
+    },
+    "13": {
+      "name": "NEON SCRATCH",
+      "image_hash": "c564a933df8e8a5c4f1992ce0612ba972b194db3f6faf2793215b9bbbdad0d1a",
+      "image_link": "https://gateway.irys.xyz/F3ePd93eURukXHrFX66aeYYToNqGhkW19g2CaYN44Afv?ext=png",
+      "metadata_hash": "9795f449cfb07f2ce0c88ebeb8e575251733618067e5185a85f7fb665add9ef6",
+      "metadata_link": "https://gateway.irys.xyz/AYccTCLhx3gJ4NzGgrHZpbNbSF5H1v4ZA3H866Lij2zt",
+      "onChain": true
+    },
+    "14": {
+      "name": "PIXEL BITE",
+      "image_hash": "fa545b6b8b0387960621c856f91e74505b360c24b59e657f438763cd66f903be",
+      "image_link": "https://gateway.irys.xyz/4CrikFC7oVF7xtzyhB2dV2XYNh68FRHNEW11BEqR6k5H?ext=png",
+      "metadata_hash": "01b6094bc07b798961e275c7dfa3992245d1ab874d548ae65aea94c971a8cbec",
+      "metadata_link": "https://gateway.irys.xyz/5jshGKTWGH4PAL8EqDajRepN8mbAqCyjSxNwVrxqvNTA",
+      "onChain": true
+    },
+    "15": {
+      "name": "BYTE SLASH",
+      "image_hash": "d3da7fbb63ba3a1f79c25a67b060559b26c509324367be7fef78f9c9c60f4e07",
+      "image_link": "https://gateway.irys.xyz/4ryKCcMM3nUG3qgZuqKndtyk6GggnGpVP1oEFStuCx8Z?ext=png",
+      "metadata_hash": "b7ba96a7831632763b7b592a3e1a99b474edfd1ecebe39317f027298e73c91bb",
+      "metadata_link": "https://gateway.irys.xyz/CsWaBYGBAnjRwJUgL8z93BRKcJjXSRPoKrpb8KuKd7fM",
+      "onChain": true
+    },
+    "16": {
+      "name": "CODE CLAW",
+      "image_hash": "93dc252a2cb1ac68e76e0fac3508196ff61953b8952821ede24bb032b9aa8263",
+      "image_link": "https://gateway.irys.xyz/8JEh7Fgbp4wMeKm7c2fDg81CdshGgHyfDaKNopk1PbEB?ext=png",
+      "metadata_hash": "f6b87ebb03c051353a6576cc49b9698c8499b0f3affb4cc5dd4634b52a0bb7db",
+      "metadata_link": "https://gateway.irys.xyz/8oHfrHkM8YqkW8SnaT1QWZEMTY8EXJpSmW1FBNtotam1",
+      "onChain": true
+    },
+    "17": {
+      "name": "DATA PAW",
+      "image_hash": "a5307381d841a14e6a669392d1c74642bc000f44e669744d6f139f88aa2dc9d3",
+      "image_link": "https://gateway.irys.xyz/D3FtsbMNAihcpwfZzfwHFr8E2PXQ7Mnb2cVmPixdPhuz?ext=png",
+      "metadata_hash": "a5d6b5c2745453b2380f0a265cddc4e97791a7b82ffa38951976630135d7cbc8",
+      "metadata_link": "https://gateway.irys.xyz/8e2V9xKmZvLWvfiJGinZQtBdSyLqe6mCkLXbjHTVnfCm",
+      "onChain": true
+    },
+    "18": {
+      "name": "BOOT KICK",
+      "image_hash": "83d3d345baa27af2cff1bc0e3259fa0f65a89103bad35eb8a7776965f1d75000",
+      "image_link": "https://gateway.irys.xyz/GmyQzfsvJqdotNyTbQvaXQ7D9j8ym61Z5aTJQRovPidP?ext=png",
+      "metadata_hash": "14811cd19de9b2c7b2b06242b0c0d81c81f60d09fc3487c58a09bf39da3459bf",
+      "metadata_link": "https://gateway.irys.xyz/52DDnS7ZPDJTCG5rLwq6LTYpHq25UVGZn4jxqtnoQSVR",
+      "onChain": true
+    },
+    "19": {
+      "name": "SYSTEM ERROR",
+      "image_hash": "5a306bddfc8eaee5fc2a25b3edb5fa201d8bf321b1ee70bbd38559c7129520e2",
+      "image_link": "https://gateway.irys.xyz/AA9esFzgS3D6UjwiGCAdn1KJnTF46dEupfMyWPVxzac?ext=png",
+      "metadata_hash": "930498bba298031cadf3f5978e44a0ad9bd8861891d6f93c1d1ee33df7749144",
+      "metadata_link": "https://gateway.irys.xyz/4DaTSRpSyWSqGoUPRjo1pJyZiDfNpCzo3qdep4ZzQpkW",
+      "onChain": true
+    },
+    "20": {
+      "name": "TIDAL CLAW",
+      "image_hash": "c542fb56a1857068ed6518efb67c1407bdc8b18ee5748977703e12355a3adeec",
+      "image_link": "https://gateway.irys.xyz/EUwKbDLtnhXWpMgbANKtPNDszXFbLwt2swgpLzwrF6F?ext=png",
+      "metadata_hash": "8c4fbccbdda165887dd5112ca1c017c92bd52a5b9e6637ab1161adef245da264",
+      "metadata_link": "https://gateway.irys.xyz/8jccP1AavryWpyf55x6FeoJkD9iR1GnSryrUx6iySnxK",
+      "onChain": true
+    },
+    "21": {
+      "name": "FROST BITE",
+      "image_hash": "d7a330f373642ef9aa1a59f59e81d52b152316fef7e9f227ad51b0d30132c7a7",
+      "image_link": "https://gateway.irys.xyz/8VCLEgzeJRR5taDMaRSx4qbFyog9zyhmez8bZsJeRHUg?ext=png",
+      "metadata_hash": "25fca2c7328aaafa0a9554c44822521704f0690c1dbe9f2fdd0228d6dbca0016",
+      "metadata_link": "https://gateway.irys.xyz/3nmbiKeZmaWvDF767z5mapyeBA74E92nXNiGizGYy6xC",
+      "onChain": true
+    },
+    "22": {
+      "name": "SHADOW STEP",
+      "image_hash": "879123a532e29a481a221a7c23a94d930303133b88fb7a355ac722a03d130cc4",
+      "image_link": "https://gateway.irys.xyz/G6zuW2VqTXyiAkcjNbwAMDXrSaLtZtctxchqx2WYRqJa?ext=png",
+      "metadata_hash": "a9f6fc2eca246cfea227db6758d62fd59ecd3d04d5dc8c72939c10e7163238b3",
+      "metadata_link": "https://gateway.irys.xyz/DPJ7UhYwb514z3DfbKUkEwiJweNiUvYxzUW9ZEVi76BH",
+      "onChain": true
+    },
+    "23": {
+      "name": "IRON FUR",
+      "image_hash": "2a3f6983bc12b9b8c75d480d989ee3bab72b936b9234f1e229ade5a104bd2530",
+      "image_link": "https://gateway.irys.xyz/7mNswwuWEtYLU6G2vmGN7tLGAY2meKzpcfVhATReu3Go?ext=png",
+      "metadata_hash": "7225679415ec3c067198674143c935c726e27ae70f43e144484028a044b0dc1d",
+      "metadata_link": "https://gateway.irys.xyz/5p5kbyVXaPShQW5kXRkCET9ANJCLJLMiiPWVHdHAbo3e",
+      "onChain": true
+    },
+    "24": {
+      "name": "STORM DASH",
+      "image_hash": "f46208e9f7450fb73468a46ede6cb87c6f8fa686d2bac5355b6fa1a455f2cf51",
+      "image_link": "https://gateway.irys.xyz/2H8zVdq1X7yNbTEjNo49wTtAHaEmbzs7MknTcRDXWe7L?ext=png",
+      "metadata_hash": "f29436b93ec5671a762051ea5d76201f5cf64a215543fa14e90fda7fbf91a9ca",
+      "metadata_link": "https://gateway.irys.xyz/4pB7m5WNHMp9H2HA2t7iSjZmi7i7rCfpPzB8kyQop2KA",
+      "onChain": true
+    },
+    "25": {
+      "name": "VOID LEAP",
+      "image_hash": "f61b8952928c269ca9ee04ecb5f9153cebbac69bb856b353900f4ee01e874a47",
+      "image_link": "https://gateway.irys.xyz/Cw8yd5E8eLtK5bWzWyuLDjXBypJCS42S14S76degNBKZ?ext=png",
+      "metadata_hash": "b77cadfe6f007c1b065f636670b371c2e147dedd400317c51d6a398150d6c7bb",
+      "metadata_link": "https://gateway.irys.xyz/DX9CBmwftiKsUgH248WGUEEQE8VxaascthfxQcZf5jtL",
+      "onChain": true
+    },
+    "26": {
+      "name": "PLASMA SLASH",
+      "image_hash": "d23636ac11639ae15fe98c6f5963f107c0f10b7e9d401d70e3502dc175140f13",
+      "image_link": "https://gateway.irys.xyz/7hTiPhHQs3216Ac6G6933aAoFSyywebJ2HGdBchDb3ZD?ext=png",
+      "metadata_hash": "b781bd114ce7811b90fbf89964164536934d77253b89af3ea8d56c2dd5c4a042",
+      "metadata_link": "https://gateway.irys.xyz/BNErro3WGR6rgo5WweqEqqXLGZM9tsJexbpUiJWrXthX",
+      "onChain": true
+    },
+    "27": {
+      "name": "TURBO PAW",
+      "image_hash": "7e192f55ba0e027ef28b76aeb028cda0eed4db34368ef94898f8c8301451e40f",
+      "image_link": "https://gateway.irys.xyz/HFQX6mkCuJbdjurNu8VDZzXY1HbSWWKgN6bL27VryC54?ext=png",
+      "metadata_hash": "2b2e2cfc91dc0c613af919afc06f2a9ab580ebac879ecee365a78f4bd577d080",
+      "metadata_link": "https://gateway.irys.xyz/3ybxpBrSU4Zpyk7XHWAH4bPtuSPsRDCcq31ypCzfXXLc",
+      "onChain": true
+    },
+    "28": {
+      "name": "CYBER FANG",
+      "image_hash": "1c53db93befd022dc4534c740d99a059fb59a5a7e072fa95515e46509d8d4bd7",
+      "image_link": "https://gateway.irys.xyz/9k8BKBh7QD7zw565hV3nPmVf5M7DK8UfyEWyXTeQgdp7?ext=png",
+      "metadata_hash": "7161dc8bdabfd5b0da7ee89f00e84b329f20a27e9b03801d040a42f65ce56093",
+      "metadata_link": "https://gateway.irys.xyz/FwE7kegUje6rgEzCZHrVUDhLvc5ionWs3dG4Mh9cMUe",
+      "onChain": true
+    },
+    "29": {
+      "name": "QUANTUM STEP",
+      "image_hash": "4a108f0a938a960c07c294baec8d6e82b6ec9bb27a5c87c4e7dba6beb8959312",
+      "image_link": "https://gateway.irys.xyz/BRp3m8MhymHYKShJyYhE1YSXBfG14VR2HCxy5MwaqYj5?ext=png",
+      "metadata_hash": "924b99a383c827697b719e492dc2353659682e3cad6b0fda981ddd406588620c",
+      "metadata_link": "https://gateway.irys.xyz/8yWY2G3vF27u8Rwz7hRScBmPcuS8uoBGVnGNoE15fHyV",
+      "onChain": true
+    },
+    "30": {
+      "name": "NEON BURST",
+      "image_hash": "aa621d74d0e9d834a16056bee62bb265fc76bd61f12032f773d75e3a2ccb6ff9",
+      "image_link": "https://gateway.irys.xyz/3WwyJhttZGuLd1EgcrBqga6sUby8cd6W1coGYewoHGAZ?ext=png",
+      "metadata_hash": "e472558a36edc3d9a3424ca3098acce30fadb78a4fd99260a095d07d78d95dd6",
+      "metadata_link": "https://gateway.irys.xyz/DjBzMyhYtzHKZjgGBMxtWN1Ww17wbzHUL1br6XDZnFWh",
+      "onChain": true
+    },
+    "31": {
+      "name": "LASER CLAW",
+      "image_hash": "c35d0b09c7188fea55b78ee6de2c383d7cf1ce542f79358b572f506d7be4aa99",
+      "image_link": "https://gateway.irys.xyz/6SWFPJknZ9UG9EbH2id1MiML1fSJR13hs9gqtB9ixNGS?ext=png",
+      "metadata_hash": "a5acbd1f646cdbdfd5565adc852ff6b18e3349290e116a8f95d982c2726c1a7f",
+      "metadata_link": "https://gateway.irys.xyz/2uAKyGHxZfvb7W4yP6WVU9E6LZRHH273abUrWLFLGjvP",
+      "onChain": true
+    },
+    "32": {
+      "name": "THUNDER POUNCE",
+      "image_hash": "9b9e5f484b7d2b816e8a0859d3394dfae7b7a974e0f41d4162ee313ef736f7c4",
+      "image_link": "https://gateway.irys.xyz/4FRWFsG3jgA9orwhnjWPt6BN9EDdadg7t6kFvsdJzTze?ext=png",
+      "metadata_hash": "fde7fe99f1d257a42b9f5afd7c619f1e6b39093c3a11de813658668964863621",
+      "metadata_link": "https://gateway.irys.xyz/8Ej5hFRA1RHdrHxssAF14eaj6Qi2toei4txFZXhyv4VV",
+      "onChain": true
+    },
+    "33": {
+      "name": "INFERNO SCRATCH",
+      "image_hash": "383e4281383fd7cdd28c4ed2815cef129a0834a2889b371dd8d799e58719fab1",
+      "image_link": "https://gateway.irys.xyz/Ed2cmj7Wj171VWx2Npc7aJgf7nL36apjx6YdWMVTwkmB?ext=png",
+      "metadata_hash": "7c6e8c49ebb422a9450eac41ab657a2e024228f2410ee0751a7ca2d1858ba5a4",
+      "metadata_link": "https://gateway.irys.xyz/8ocmwddKWew1PCnxN51qRSRibZMrUCts5aQRqMvhG2W",
+      "onChain": true
+    },
+    "34": {
+      "name": "VOID CLAW",
+      "image_hash": "a470cc2c2e134148a06684253dac1cb01599bfa38019f0bb638b515640edd59a",
+      "image_link": "https://gateway.irys.xyz/AwLwM8NJU1xBjXAHsLBq3rLnHtMxmUmJtTbKgcHT97UH?ext=png",
+      "metadata_hash": "7739f93c7e341fa1c3c3331488e9d269a7d529b24e609a1ef9f86363a2cdb26d",
+      "metadata_link": "https://gateway.irys.xyz/CMmFYuvBpVFswYTSmm9eu6znj4pf1sfhqcahk12FVZEV",
+      "onChain": true
+    },
+    "35": {
+      "name": "CYBER STORM",
+      "image_hash": "2134f6427bf1bc202361ac743810faab98ba06d8b32937ec16c7e9e688f3dfc6",
+      "image_link": "https://gateway.irys.xyz/4muywYvsVsd3nfaCXQEKnMZqPnaPieBk4x2dakTYWVL2?ext=png",
+      "metadata_hash": "4a03a12a82a546414766f5bb4f89b553d817607f4da4342b3e2b630409102344",
+      "metadata_link": "https://gateway.irys.xyz/HAonbfeU9fFZ5VTxfPQF65gzdXByVhMhaUDJYXF7ahjh",
+      "onChain": true
+    },
+    "36": {
+      "name": "PLASMA NOVA",
+      "image_hash": "75fee2eb84084e3cfc2a35407fa1a696666032b824eb48950cf3d8c9a770886e",
+      "image_link": "https://gateway.irys.xyz/2PDpTFUs5pGWrD3JgzHEwifAwgkuANfunjqzw7cqwAYU?ext=png",
+      "metadata_hash": "9530d28ce8bd24faeee0d7de492a64704e2867f9d7b2ded89c80be1935e7fbdd",
+      "metadata_link": "https://gateway.irys.xyz/57KYBZM9ZF2Kj577oC5mP8CAUWtXR5nizwJdPCAXP66s",
+      "onChain": true
+    },
+    "37": {
+      "name": "GLITCH FURY",
+      "image_hash": "44a9ac33db3063dcd220c839acb2aa72d85de243ef1967c2d1a0758a71c2be0c",
+      "image_link": "https://gateway.irys.xyz/6cKhqv5KhtGvSEafQcPwaYuSbBDZL7XdjzkMchHYQXQT?ext=png",
+      "metadata_hash": "507badef1a68fa2e64d39fde832e212791439b08ec5b9c6f06a4c0027d02ebee",
+      "metadata_link": "https://gateway.irys.xyz/2ehMRdf7vKTSM4trfcVSpknPbQXYqfwguNXqmiYA8C7W",
+      "onChain": true
+    },
+    "38": {
+      "name": "NEON HURRICANE",
+      "image_hash": "66be53be13d8b3214ec555b60c247fede61c2f1aca9a198e4964f206bb6416e3",
+      "image_link": "https://gateway.irys.xyz/GR3FM9aoaBEYVEz8KQU3BtLMHwxGJVba7xkVP3zaQFvq?ext=png",
+      "metadata_hash": "1fe965051dfdf4e17c4208bf696bed93702442df2367ede48a2b0f30891cc3b5",
+      "metadata_link": "https://gateway.irys.xyz/BoUZyM5J1iNnhbnoQKp7DrGJPpfLGeFZsLt8z4DCJBuB",
+      "onChain": true
+    },
+    "39": {
+      "name": "QUANTUM SLASH",
+      "image_hash": "1874d179abeb6659c5f9abcf3ca99219ee430f0d100dc0e2840633f65513b288",
+      "image_link": "https://gateway.irys.xyz/6A2hC8zWr44DBjtRLLmSE7vrWn4EYgzy6XwSjfBHiChx?ext=png",
+      "metadata_hash": "c4a63e1e9710be9c79453bb6d712805dce45f28ccb46afd66902ae843ce92a46",
+      "metadata_link": "https://gateway.irys.xyz/CUS6nvXAiGVZTUcpMf36QgV8rkCtuSE2aYvhu5TPmLmh",
+      "onChain": true
+    },
+    "40": {
+      "name": "DARK MATTER PAW",
+      "image_hash": "cb2f4e6ed751b64ac631af0220b48900f69a33fd29cba60ad89dab3c428dfbb4",
+      "image_link": "https://gateway.irys.xyz/6HYPpDZ2PxSwX9ezQDmyP7UJJNRrg1YKpF5W4wnK8Qw2?ext=png",
+      "metadata_hash": "b7db9c41e0c2b1ed0de18fb6da0de0be399dc7ea601c211d132dfedb58a80f1c",
+      "metadata_link": "https://gateway.irys.xyz/2aUxUUQTVBm3cdsjBQhKR57uf26YwUbSbmEJVf2RtCNH",
+      "onChain": true
+    },
+    "41": {
+      "name": "BINARY BLAST",
+      "image_hash": "120f35cf0a0f5a6814337a14902fc18ff72feaeca9485fe5aa83666b2c45c91e",
+      "image_link": "https://gateway.irys.xyz/3U3oEZFWvN9H7ynwFNAQHSyW6bCv3UthHdNMSn1vcuPF?ext=png",
+      "metadata_hash": "c7f5108dbfd294ac2b55755607ff69dbb39c8a4f59903f7c7257fbc719be95cd",
+      "metadata_link": "https://gateway.irys.xyz/EPmLkFjdDcLXg31VvSvjvS5TTysUasnomyjDEDiRHave",
+      "onChain": true
+    },
+    "42": {
+      "name": "DRAGON CLAW STRIKE",
+      "image_hash": "808ab77059699c035059d87be5ac1ec0d01dfa40279f603a0aac05ce2ffe9592",
+      "image_link": "https://gateway.irys.xyz/9sjufMit6HM5p9jyY5dwcW8CximyQTdwMVXCZcpFCEKq?ext=png",
+      "metadata_hash": "fc9b23a4efc301006c99faa947c1b66af40d20175c316af4f54978e4dc36a3a4",
+      "metadata_link": "https://gateway.irys.xyz/A1n557ez5J76B3csvJ5Y2NQBJyJ6op6o63KaQTq8DR7o",
+      "onChain": true
+    },
+    "43": {
+      "name": "COSMIC SLASH",
+      "image_hash": "d31a8a8b351fe8c66dfd66af280d381c72673c0bc85a48d67fc11ad35c796bfc",
+      "image_link": "https://gateway.irys.xyz/2JGUMxPR5R6SbHSvfJ2bK7EUs5BjLUyW1YBNVKvn8FeZ?ext=png",
+      "metadata_hash": "dfbb705f64460ac330d1d714dd2acd06ca1a504b90b36cf988045a0981e89945",
+      "metadata_link": "https://gateway.irys.xyz/2HBEgi95C6HBAXHCKMPM2gxVqGfF6mmKr1dfZaPnsrPE",
+      "onChain": true
+    },
+    "44": {
+      "name": "STAR NOVA",
+      "image_hash": "e912cdf8b1e49d6dfec1c692fd706e36d8a8f740eff12f3df85c2f483422a073",
+      "image_link": "https://gateway.irys.xyz/6VEqa3UDhztiUHcuiKeBHg1MxFbm4ugRC7HSnDU1F5vr?ext=png",
+      "metadata_hash": "9167d2ff152e97227aa2dfbf2153b0e59001aac037046434ac2c46519197ca5e",
+      "metadata_link": "https://gateway.irys.xyz/Bo8uBgYK6sQrdky6eANg1a5F3GbY7r74c97DPiuaxfP7",
+      "onChain": true
+    },
+    "45": {
+      "name": "OMEGA FURY",
+      "image_hash": "2cf152a615c2f2d3287da781d3db8a8d11aef235e2696b1016108665530f1068",
+      "image_link": "https://gateway.irys.xyz/EbPf68FsGqe5Tj3DpUSG24pjVEzXMjsYUkcCYaF3WBuo?ext=png",
+      "metadata_hash": "abaada00b2c3d385f8f2905847921b532fb51921acb42accaf968072766d9cb5",
+      "metadata_link": "https://gateway.irys.xyz/2U5N1JmcVftCMjcz7A7T8kwbH8rRVi8yMvAjtnkWF29J",
+      "onChain": true
+    }
+  }
+}

@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cat Punk — Mint NFT Cards · Devnet Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<script src="https://bundle.run/buffer@6.0.3"></script>
+<script>window.Buffer = window.Buffer || buffer.Buffer;</script>
+<script src="https://unpkg.com/@solana/web3.js@1.91.8/lib/index.iife.min.js"></script>
+<script src="nft-cards.js"></script>
+<script src="solana-core.js"></script>
+<style>
+:root{
+  --black:#080810;--deep:#0d0d1a;--panel:#11111d;--panel2:#161626;
+  --border:#1e1e3a;--gold:#f5c842;--gold2:#ffad00;--cyan:#00f5ff;
+  --pink:#ff2d7e;--green:#39ff14;--purple:#9b30ff;--red:#ff3636;
+  --white:#e8e8ff;--dim:#5a5a8a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--white);font-family:'Press Start 2P',monospace;font-size:10px;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.13) 2px,rgba(0,0,0,.13) 4px);pointer-events:none;z-index:9999;}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 20% 30%,rgba(155,48,255,.07),transparent),
+             radial-gradient(ellipse 50% 40% at 80% 70%,rgba(255,45,126,.05),transparent),
+             var(--black);}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(155,48,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(155,48,255,.025) 1px,transparent 1px);
+  background-size:48px 48px;}
+
+/* NAV */
+.nav-logo .cat{animation:bob 2s ease-in-out infinite;display:inline-block;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+/* PAGE */
+.page{position:relative;z-index:1;padding:70px 24px 60px;max-width:1200px;margin:0 auto;}
+
+/* PAGE HEADER */
+.page-header{padding:30px 0 28px;border-bottom:3px solid var(--border);margin-bottom:32px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;}
+.ph-tag{font-size:8px;color:var(--pink);letter-spacing:3px;display:block;margin-bottom:10px;text-shadow:0 0 10px rgba(255,45,126,.3);}
+.ph-title{font-size:clamp(14px,3vw,24px);line-height:1.4;}
+.ph-title span{color:var(--gold);}
+.ph-stats{display:flex;gap:20px;flex-wrap:wrap;}
+.ph-stat{text-align:right;}
+.ph-stat-val{font-size:14px;color:var(--cyan);}
+.ph-stat-lbl{font-family:'VT323',monospace;font-size:16px;color:var(--dim);letter-spacing:1px;}
+
+/* FILTER */
+.filter-row{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
+.filter-btn{font-size:8px;padding:8px 14px;background:var(--panel);border:2px solid var(--border);color:var(--dim);cursor:pointer;font-family:'Press Start 2P',monospace;letter-spacing:1px;transition:all .15s;}
+.filter-btn:hover,.filter-btn.active{border-color:var(--cyan);color:var(--cyan);}
+.filter-btn.f-common.active{border-color:#6a6a9a;color:#6a6a9a;}
+.filter-btn.f-rare.active{border-color:var(--cyan);color:var(--cyan);}
+.filter-btn.f-epic.active{border-color:var(--purple);color:var(--purple);}
+.filter-btn.f-legendary.active{border-color:var(--gold);color:var(--gold);}
+
+/* CARD GRID */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+
+/* NFT CARD */
+.nft-card{
+  background:var(--panel);border:3px solid var(--border);position:relative;
+  transition:all .2s;cursor:pointer;overflow:hidden;
+  animation:cardFade .4s ease both;
+}
+@keyframes cardFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.nft-card:hover{transform:translateY(-5px);}
+.nft-card.rarity-common:hover{border-color:#6a6a9a;box-shadow:0 0 20px rgba(106,106,154,.3);}
+.nft-card.rarity-rare:hover{border-color:var(--cyan);box-shadow:0 0 20px rgba(0,245,255,.3);}
+.nft-card.rarity-epic:hover{border-color:var(--purple);box-shadow:0 0 20px rgba(155,48,255,.4);}
+.nft-card.rarity-legendary:hover{border-color:var(--gold);box-shadow:0 0 24px rgba(245,200,66,.5);}
+.nft-card.owned{opacity:.5;}
+.nft-card.owned::after{content:'✓ OWNED';position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--green);letter-spacing:2px;}
+
+.card-img-wrap{
+  aspect-ratio:1;background:var(--deep);overflow:hidden;
+  display:grid;place-items:center;position:relative;
+}
+.card-img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;transition:transform .3s;}
+.nft-card:hover .card-img{transform:scale(1.06);}
+.card-img-placeholder{font-size:52px;}
+
+.card-rarity-bar{height:3px;}
+.card-rarity-bar.common{background:linear-gradient(90deg,#6a6a9a,#8888bb);}
+.card-rarity-bar.rare{background:linear-gradient(90deg,#0080ff,var(--cyan));}
+.card-rarity-bar.epic{background:linear-gradient(90deg,var(--purple),var(--pink));}
+.card-rarity-bar.legendary{background:linear-gradient(90deg,var(--gold2),var(--gold),#fff);}
+
+.card-body{padding:12px;}
+.card-name{font-size:9px;color:var(--white);margin-bottom:6px;line-height:1.5;}
+.card-power{font-family:'VT323',monospace;font-size:17px;margin-bottom:8px;letter-spacing:1px;}
+.card-footer{display:flex;align-items:center;justify-content:space-between;}
+.card-rarity-label{font-size:7px;letter-spacing:1px;padding:2px 7px;border:1px solid;}
+.card-rarity-label.common{color:#8888bb;border-color:#4a4a7a;}
+.card-rarity-label.rare{color:var(--cyan);border-color:rgba(0,245,255,.4);}
+.card-rarity-label.epic{color:var(--purple);border-color:rgba(155,48,255,.4);}
+.card-rarity-label.legendary{color:var(--gold);border-color:rgba(245,200,66,.4);}
+.card-price{font-size:8px;color:var(--gold);}
+
+/* MINT MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--panel);border:3px solid var(--border);width:100%;max-width:460px;position:relative;animation:modalIn .3s cubic-bezier(.34,1.56,.64,1);}
+@keyframes modalIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.modal-close{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer;}
+.modal-close:hover{color:var(--red);}
+
+.modal-header{padding:20px 24px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:14px;}
+.modal-card-preview{
+  width:72px;height:72px;border:2px solid;overflow:hidden;display:grid;place-items:center;flex-shrink:0;
+}
+.modal-card-preview img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;}
+.mh-name{font-size:11px;color:var(--white);margin-bottom:6px;line-height:1.5;}
+.mh-power{font-family:'VT323',monospace;font-size:19px;letter-spacing:1px;}
+
+.modal-body{padding:20px 24px;}
+.mint-info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.mint-info-row:last-of-type{border-bottom:none;}
+.mi-label{font-family:'VT323',monospace;font-size:17px;color:var(--dim);letter-spacing:1px;}
+.mi-value{font-size:10px;color:var(--white);}
+.mi-value.gold{color:var(--gold);}
+.mi-value.cyan{color:var(--cyan);}
+.mi-value.green{color:var(--green);}
+
+.mint-btn{
+  width:100%;margin-top:16px;padding:16px;background:var(--gold);border:none;
+  color:#000;font-family:'Press Start 2P',monospace;font-size:11px;cursor:pointer;
+  transition:all .2s;letter-spacing:1px;position:relative;overflow:hidden;
+}
+.mint-btn::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .2s;}
+.mint-btn:hover::before{background:rgba(255,255,255,.15);}
+.mint-btn:hover{transform:scale(1.02);}
+.mint-btn:active{transform:scale(.98);}
+.mint-btn:disabled{background:var(--dim);color:var(--border);cursor:not-allowed;transform:none;}
+
+/* Mint status */
+.mint-status{
+  margin-top:14px;padding:14px;background:var(--deep);border:2px solid var(--border);
+  display:none;
+}
+.mint-status.show{display:block;}
+.ms-step{display:flex;align-items:center;gap:10px;font-family:'VT323',monospace;font-size:17px;color:var(--dim);padding:5px 0;}
+.ms-step.active{color:var(--white);}
+.ms-step.done{color:var(--green);}
+.ms-dot{width:8px;height:8px;flex-shrink:0;border-radius:50%;background:var(--border);transition:all .3s;}
+.ms-dot.active{background:var(--cyan);animation:blink .7s infinite;}
+.ms-dot.done{background:var(--green);}
+@keyframes blink{50%{opacity:.2}}
+
+/* Success state */
+.mint-success{text-align:center;padding:20px 0;display:none;}
+.mint-success.show{display:block;}
+.ms-icon{font-size:48px;margin-bottom:12px;animation:bounceIn .6s cubic-bezier(.34,1.56,.64,1);}
+@keyframes bounceIn{from{transform:scale(0)}to{transform:scale(1)}}
+.ms-title{font-size:14px;color:var(--gold);margin-bottom:8px;}
+.ms-tx{font-family:'VT323',monospace;font-size:15px;color:var(--dim);word-break:break-all;margin-bottom:14px;line-height:1.6;}
+.ms-tx a{color:var(--cyan);text-decoration:none;}
+.ms-tx a:hover{text-decoration:underline;}
+
+/* Wallet needed */
+.wallet-needed{
+  text-align:center;padding:24px;display:none;flex-direction:column;align-items:center;gap:10px;
+}
+.wallet-needed.show{display:flex;}
+.wn-text{font-family:'VT323',monospace;font-size:18px;color:var(--dim);line-height:1.7;margin-bottom:8px;}
+.wallet-options{display:flex;flex-direction:column;gap:10px;width:100%;max-width:380px;}
+.wallet-opt-btn{display:flex;align-items:center;gap:14px;background:var(--panel);border:2px solid var(--border);padding:14px 16px;cursor:pointer;transition:all .15s;width:100%;text-align:left;font-family:'Press Start 2P',monospace;}
+.wallet-opt-btn:hover{border-color:var(--cyan);background:rgba(0,245,255,.04);transform:translateX(4px);}
+.wallet-opt-btn.not-installed{opacity:.45;cursor:not-allowed;}
+.wallet-opt-btn.not-installed:hover{border-color:var(--border);background:var(--panel);transform:none;}
+.wo-icon{width:36px;height:36px;display:grid;place-items:center;font-size:22px;flex-shrink:0;}
+.wo-meta{flex:1;}
+.wo-name{font-size:9px;color:var(--white);display:block;margin-bottom:3px;}
+.wo-desc{font-family:'VT323',monospace;font-size:14px;color:var(--dim);letter-spacing:1px;}
+.wo-badge{font-size:7px;padding:2px 6px;border:1px solid;flex-shrink:0;letter-spacing:1px;}
+.badge-ok{border-color:var(--green);color:var(--green);}
+.badge-get{border-color:var(--dim);color:var(--dim);}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;right:28px;z-index:1000;background:rgba(10,10,20,.97);border:2px solid var(--green);padding:12px 18px;font-size:9px;color:var(--green);letter-spacing:1px;animation:toastIn .3s ease;}
+@keyframes toastIn{from{transform:translateX(120%);opacity:0}to{transform:none;opacity:1}}
+
+/* Owned owned banner */
+.owned-count-banner{
+  background:rgba(57,255,20,.05);border:2px solid rgba(57,255,20,.2);
+  padding:12px 18px;margin-bottom:24px;
+  font-family:'VT323',monospace;font-size:18px;color:var(--green);letter-spacing:1px;
+  display:none;align-items:center;gap:12px;
+}
+.owned-count-banner.show{display:flex;}
+
+/* ═══════════════════════════════════════
+   CATPUNK UNIFIED NAVBAR — mobile-ready
+   ═══════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(8,8,16,.97);
+  border-bottom: 2px solid var(--gold, #f5c842);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.nav-logo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--gold, #f5c842);
+  text-decoration: none;
+  display: flex; align-items: center; gap: 10px;
+  text-shadow: 2px 2px 0 #000;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-logo .cat { animation: bob 2s ease-in-out infinite; display: inline-block; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+.nav-links {
+  display: flex; gap: 4px; align-items: center;
+  list-style: none; margin: 0; padding: 0;
+}
+.nav-links a {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #888;
+  text-decoration: none;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.nav-links a:hover,
+.nav-links a.active { color: var(--cyan, #00f5ff); border-color: var(--cyan, #00f5ff); background: rgba(0,245,255,.07); }
+.nav-wallet-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 8px 14px;
+  border: 2px solid var(--gold, #f5c842);
+  color: var(--gold, #f5c842);
+  background: transparent;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-wallet-btn:hover { background: var(--gold, #f5c842); color: #000; }
+.nav-wallet-btn.connected { border-color: var(--green, #39ff14); color: var(--green, #39ff14); }
+.nav-wallet-btn.connected:hover { border-color: var(--red, #ff3636); color: var(--red, #ff3636); background: transparent; }
+/* ── Hamburger ── */
+.nav-hamburger {
+  display: none;
+  flex-direction: column; justify-content: center; align-items: center;
+  width: 36px; height: 36px;
+  background: none; border: 1px solid #444; border-radius: 4px;
+  cursor: pointer; gap: 5px; padding: 0;
+  flex-shrink: 0;
+}
+.nav-hamburger span {
+  display: block; width: 18px; height: 2px;
+  background: var(--gold, #f5c842);
+  transition: all .25s;
+}
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+/* ── Mobile drawer ── */
+.nav-mobile-drawer {
+  display: none;
+  position: fixed; top: 54px; left: 0; right: 0;
+  background: rgba(8,8,16,.99);
+  border-bottom: 2px solid var(--gold, #f5c842);
+  flex-direction: column;
+  padding: 16px 24px 20px;
+  gap: 8px;
+  z-index: 999;
+}
+.nav-mobile-drawer.open { display: flex; }
+.nav-mobile-drawer a {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #888;
+  text-decoration: none;
+  letter-spacing: 1px;
+  padding: 10px 0;
+  border-bottom: 1px solid #1a1a2e;
+  transition: color .2s;
+}
+.nav-mobile-drawer a:hover,
+.nav-mobile-drawer a.active { color: var(--cyan, #00f5ff); }
+.nav-mobile-drawer .nav-mobile-wallet {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 2px solid var(--gold, #f5c842);
+  color: var(--gold, #f5c842);
+  background: transparent;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+/* ── Responsive breakpoints ── */
+@media (max-width: 820px) {
+  .nav-links { display: none; }
+  .nav-hamburger { display: flex; }
+}
+@media (max-width: 480px) {
+  nav { padding: 0 14px; }
+  .nav-logo { font-size: 9px; }
+  .nav-wallet-btn { display: none; }
+}
+/* Body offset for fixed nav */
+body { padding-top: 54px; }
+
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="bg-grid"></div>
+
+<!-- ── DEVNET DEMO BANNER ── -->
+<div style="
+  position:fixed;top:56px;left:0;right:0;z-index:90;
+  background:linear-gradient(90deg,rgba(155,48,255,.12),rgba(0,0,0,0),rgba(155,48,255,.12));
+  border-bottom:1px solid rgba(155,48,255,.3);
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  padding:7px 16px;font-family:'Press Start 2P',monospace;font-size:7px;
+">
+  <span style="display:inline-flex;align-items:center;gap:6px;">
+    <span style="width:8px;height:8px;background:#9b30ff;border-radius:50%;display:inline-block;animation:mintpulse 1.5s ease-in-out infinite;box-shadow:0 0 6px #9b30ff;"></span>
+    <span style="color:#9b30ff;">DEMO MINT ON DEVNET</span>
+  </span>
+  <span style="color:#2a2a4a;">|</span>
+  <span style="color:#5a5a8a;">Testnet SOL only · No real money needed</span>
+  <span style="color:#2a2a4a;">|</span>
+  <a href="https://faucet.solana.com" target="_blank" style="color:#9b30ff;text-decoration:none;letter-spacing:1px;">GET FREE SOL ↗</a>
+</div>
+<style>@keyframes mintpulse{0%,100%{opacity:1}50%{opacity:.4}}</style>
+
+
+<nav>
+  <a class="nav-logo" href="index.html"><span class="cat">😼</span> CATPUNK</a>
+  <ul class="nav-links">
+    <li><a href="index.html">HOME</a></li>
+    <li><a href="game.html">PLAY</a></li>
+    <li><a href="mint.html" class="active">MINT</a></li>
+    <li><a href="equip.html">CARDS</a></li>
+    <li><a href="staking.html">STAKING</a></li>
+    <li><a href="wallet.html">WALLET</a></li>
+  </ul>
+  <button class="nav-wallet-btn" id="nav-wallet-btn" onclick="handleNavWallet()">CONNECT WALLET</button>
+  <button class="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="nav-mobile-drawer">
+  <a href="index.html">HOME</a>
+  <a href="game.html">PLAY</a>
+  <a href="mint.html" class="active">MINT</a>
+  <a href="equip.html">CARDS</a>
+  <a href="staking.html">STAKING</a>
+  <a href="wallet.html">WALLET</a>
+  <button class="nav-mobile-wallet" onclick="handleNavWallet()">CONNECT WALLET</button>
+</div>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <span class="ph-tag">// NFT CARD COLLECTION</span>
+      <h1 class="ph-title">MINT <span>CATPUNK</span><br>NFT CARDS</h1>
+    </div>
+    <div class="ph-stats">
+      <div class="ph-stat">
+        <div class="ph-stat-val" id="ph-total">47</div>
+        <div class="ph-stat-lbl">TOTAL CARDS</div>
+      </div>
+      <div class="ph-stat">
+        <div class="ph-stat-val" id="ph-owned">0</div>
+        <div class="ph-stat-lbl">YOU OWN</div>
+      </div>
+      <div class="ph-stat">
+        <div class="ph-stat-val" style="color:var(--gold)">0.05 SOL</div>
+        <div class="ph-stat-lbl">MINT PRICE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owned banner -->
+  <div class="owned-count-banner" id="owned-banner">
+    <span>✅</span>
+    <span id="owned-banner-text">You own 0 NFT cards. Mint more to increase your power!</span>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="filterCards('all', this)">ALL (47)</button>
+    <button class="filter-btn f-common" onclick="filterCards('common', this)">⚪ COMMON (20)</button>
+    <button class="filter-btn f-rare" onclick="filterCards('rare', this)">🔵 RARE (12)</button>
+    <button class="filter-btn f-epic" onclick="filterCards('epic', this)">🟣 EPIC (10)</button>
+    <button class="filter-btn f-legendary" onclick="filterCards('legendary', this)">🟡 LEGENDARY (5)</button>
+  </div>
+
+  <!-- Card Grid -->
+  <div class="cards-grid" id="cards-grid"></div>
+</div>
+
+<!-- MINT MODAL -->
+<div class="modal-overlay" id="mint-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+
+    <!-- Card Preview Header -->
+    <div class="modal-header" id="modal-header">
+      <div class="modal-card-preview" id="modal-preview" style="border-color:var(--gold);">
+        <img id="modal-img" src="" alt="">
+      </div>
+      <div>
+        <div class="mh-name" id="modal-name">—</div>
+        <div class="mh-power" id="modal-power" style="color:var(--gold)">—</div>
+        <div id="modal-rarity-label" class="card-rarity-label" style="margin-top:6px;">—</div>
+      </div>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Wallet not connected -->
+      <div class="wallet-needed" id="wn-section">
+        <div class="wn-text">⚠️ Connect your wallet to mint NFTs.</div>
+        <div class="wallet-options" id="wn-wallet-list"></div>
+      </div>
+
+      <!-- Mint form -->
+      <div id="mint-form-section">
+        
+          <!-- ── DEVNET DEMO BADGE ── -->
+          <div style="margin-bottom:16px;padding:12px 14px;background:#0d0a1a;border:2px solid rgba(155,48,255,.4);border-radius:4px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="width:8px;height:8px;background:#9b30ff;border-radius:50%;box-shadow:0 0 6px #9b30ff;"></span>
+              <span style="font-size:7px;color:#9b30ff;font-family:'Press Start 2P',monospace;">DEVNET DEMO MODE</span>
+            </div>
+            <div style="font-family:'VT323',monospace;font-size:15px;color:#5a5a8a;line-height:1.7;">
+              This mint uses Solana <strong style="color:#9b30ff;">Devnet</strong> — no real money.<br>
+              You need devnet SOL to pay the tx fee (~0.05 SOL).<br>
+              NFTs minted here are <strong style="color:#9b30ff;">demo only</strong> and won't appear on mainnet.
+            </div>
+            <a id="faucet-link" href="https://faucet.solana.com" target="_blank"
+               style="display:inline-block;margin-top:10px;font-size:7px;
+                      background:rgba(155,48,255,.15);border:1px solid #9b30ff;
+                      color:#9b30ff;padding:7px 12px;text-decoration:none;
+                      font-family:'Press Start 2P',monospace;letter-spacing:1px;">
+              💧 GET FREE DEVNET SOL ↗
+            </a>
+          </div>
+
+          <div class="mint-info-row">
+          <span class="mi-label">MINT PRICE</span>
+          <span class="mi-value gold">0.05 SOL</span>
+        </div>
+        <div class="mint-info-row">
+          <span class="mi-label">NETWORK</span>
+          <span class="mi-value" style="color:#9b30ff;" id="mi-network">DEVNET (DEMO)</span>
+        </div>
+        <div class="mint-info-row">
+          <span class="mi-label">YOUR BALANCE</span>
+          <span class="mi-value green" id="mi-balance">—</span>
+        </div>
+        <div class="mint-info-row">
+          <span class="mi-label">RARITY</span>
+          <span class="mi-value" id="mi-rarity">—</span>
+        </div>
+
+        <button class="mint-btn" id="mint-btn" onclick="executeMint()">⚡ MINT THIS CARD</button>
+
+        <!-- Steps -->
+        <div class="mint-status" id="mint-status">
+          <div class="ms-step" id="mstep1"><div class="ms-dot" id="mdot1"></div><span>Mempersiapkan transaksi...</span></div>
+          <div class="ms-step" id="mstep2"><div class="ms-dot" id="mdot2"></div><span>Menunggu konfirmasi wallet...</span></div>
+          <div class="ms-step" id="mstep3"><div class="ms-dot" id="mdot3"></div><span>Broadcasting ke Solana...</span></div>
+          <div class="ms-step" id="mstep4"><div class="ms-dot" id="mdot4"></div><span>Konfirmasi on-chain...</span></div>
+          <div class="ms-step" id="mstep5"><div class="ms-dot" id="mdot5"></div><span>Minting NFT ke wallet...</span></div>
+        </div>
+
+        <!-- Success -->
+        <div class="mint-success" id="mint-success">
+          <div class="ms-icon">🎉</div>
+          <div class="ms-title">MINT BERHASIL!</div>
+          <div class="ms-tx" id="ms-tx-info">—</div>
+          <button class="mint-btn" onclick="closeModal()" style="margin-top:0;">CLOSE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const RARITY_COLOR_MAP = { common:'#6a6a9a', rare:'#00f5ff', epic:'#9b30ff', legendary:'#f5c842' };
+let currentFilter = 'all';
+let selectedCard  = null;
+let ownedIds      = [];
+
+// ── BUILD GRID ────────────────────────────────────────────────────────────────
+function buildGrid() {
+  // Use on-chain NFT names from CatPunkWallet.nfts
+  const onChainNfts = (typeof CatPunkWallet !== 'undefined') ? (CatPunkWallet.nfts || []) : [];
+  const ownedNames  = new Set(onChainNfts.map(n => n.name.trim().toUpperCase()));
+  ownedIds = onChainNfts.map(n => n.id);
+
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = '';
+
+  const filtered = currentFilter === 'all'
+    ? NFT_CARDS
+    : NFT_CARDS.filter(c => c.rarity === currentFilter);
+
+  filtered.forEach((card, i) => {
+    const owned = ownedNames.has(card.name.trim().toUpperCase());
+    const col   = RARITY_COLOR_MAP[card.rarity] || '#6a6a9a';
+
+    const el = document.createElement('div');
+    el.className = `nft-card rarity-${card.rarity}${owned ? ' owned' : ''}`;
+    el.style.animationDelay = (i * 0.03) + 's';
+    el.onclick = () => owned ? null : openMintModal(card);
+
+    el.innerHTML = `
+      <div class="card-img-wrap">
+        <img class="card-img" src="${card.img}" alt="${card.name}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="card-img-placeholder" style="display:none;">${getEmoji(card.rarity)}</div>
+      </div>
+      <div class="card-rarity-bar ${card.rarity}"></div>
+      <div class="card-body">
+        <div class="card-name">${card.name}</div>
+        <div class="card-power" style="color:${col}">${card.power}</div>
+        <div class="card-footer">
+          <span class="card-rarity-label ${card.rarity}">${card.rarity.toUpperCase()}</span>
+          <span class="card-price">${owned ? '✓ OWNED' : '0.05 SOL'}</span>
+        </div>
+      </div>
+    `;
+    grid.appendChild(el);
+  });
+
+  // Update counters
+  const ownedCount = ownedNames ? ownedNames.size : ownedIds.length;
+  document.getElementById('ph-owned').textContent = ownedCount;
+  if (ownedCount > 0) {
+    document.getElementById('owned-banner').classList.add('show');
+    document.getElementById('owned-banner-text').textContent =
+      `You own ${ownedCount} NFT card${ownedCount > 1 ? 's' : ''}. Mint more to increase your power!`;
+  }
+}
+
+function filterCards(rarity, btn) {
+  currentFilter = rarity;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildGrid();
+}
+
+// ── MINT MODAL ────────────────────────────────────────────────────────────────
+function openMintModal(card) {
+  selectedCard = card;
+  const col = RARITY_COLOR_MAP[card.rarity] || '#6a6a9a';
+
+  document.getElementById('modal-img').src = card.img;
+  document.getElementById('modal-preview').style.borderColor = col;
+  document.getElementById('modal-name').textContent = card.name;
+  document.getElementById('modal-power').textContent = card.power;
+  document.getElementById('modal-power').style.color = col;
+  const rl = document.getElementById('modal-rarity-label');
+  rl.textContent = card.rarity.toUpperCase();
+  rl.className = `card-rarity-label ${card.rarity}`;
+
+  // Wallet state
+  const connected = CatPunkWallet.connected;
+  document.getElementById('wn-section').classList.toggle('show', !connected);
+  document.getElementById('mint-form-section').style.display = connected ? 'block' : 'none';
+
+  if (connected) {
+    document.getElementById('mi-network').textContent = CATPUNK_CONFIG.NETWORK.toUpperCase();
+    document.getElementById('mi-balance').textContent = formatNumber(CatPunkWallet.solBalance, 4) + ' SOL';
+    document.getElementById('mi-rarity').textContent = card.rarity.toUpperCase();
+    document.getElementById('mi-rarity').style.color = col;
+  }
+
+  // Reset states
+  document.getElementById('mint-status').classList.remove('show');
+  document.getElementById('mint-success').classList.remove('show');
+  document.getElementById('mint-btn').style.display = '';
+  document.getElementById('mint-btn').disabled = false;
+  resetMintSteps();
+
+  document.getElementById('mint-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('mint-modal').classList.remove('open');
+  selectedCard = null;
+}
+
+// ── EXECUTE MINT ──────────────────────────────────────────────────────────────
+let mintStep = 0;
+
+async function executeMint() {
+  if (!selectedCard) return;
+  if (!CatPunkWallet.connected) {
+    closeModal();
+    handleNavWallet();
+    return;
+  }
+
+  document.getElementById('mint-btn').disabled = true;
+  document.getElementById('mint-status').classList.add('show');
+  resetMintSteps();
+
+  const stepMsgs = [
+    'Mempersiapkan transaksi...',
+    'Waiting for wallet approval...',
+    'Broadcasting to Solana...',
+    'Confirming on-chain...',
+    'Minting NFT to your wallet...',
+  ];
+
+  let currentStep = 0;
+  function setStep(n) {
+    if (currentStep > 0) setStepDone(currentStep);
+    currentStep = n;
+    setStepActive(n);
+  }
+
+  try {
+    setStep(1);
+
+    const result = await mintNFTCard(selectedCard, (msg) => {
+      // Map status messages to steps
+      if (msg.includes('Mempersiapkan')) setStep(1);
+      else if (msg.includes('Approve') || msg.includes('wallet')) setStep(2);
+      else if (msg.includes('Broadcast')) setStep(3);
+      else if (msg.includes('Confirming') || msg.includes('Confirm')) setStep(4);
+      else if (msg.includes('Minting') || msg.includes('NFT')) setStep(5);
+    });
+
+    // All done
+    for (let i = currentStep; i <= 5; i++) setStepDone(i);
+
+    // Show success
+    document.getElementById('mint-btn').style.display = 'none';
+    document.getElementById('mint-success').classList.add('show');
+    document.getElementById('ms-tx-info').innerHTML = `
+      Card <strong>${selectedCard.name}</strong> successfully minted!<br><br>
+      TX: <a href="${result.txUrl}" target="_blank">${result.txHash.slice(0,16)}...${result.txHash.slice(-8)} ↗</a>
+    `;
+
+    showToast('🎉 NFT minted successfully!');
+
+    // Rebuild grid
+    buildGrid();
+    document.getElementById('ph-owned').textContent = JSON.parse(localStorage.getItem('cpk_devnet_nfts') || '[]').length;
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('mint-status').classList.remove('show');
+    document.getElementById('mint-btn').disabled = false;
+    showToast('❌ ' + (err.message || 'Mint failed'), 'error');
+  }
+}
+
+function resetMintSteps() {
+  for (let i = 1; i <= 5; i++) {
+    const dot  = document.getElementById('mdot' + i);
+    const step = document.getElementById('mstep' + i);
+    dot.className = 'ms-dot';
+    step.className = 'ms-step';
+  }
+}
+function setStepActive(n) {
+  document.getElementById('mdot' + n).className = 'ms-dot active';
+  document.getElementById('mstep' + n).className = 'ms-step active';
+}
+function setStepDone(n) {
+  document.getElementById('mdot' + n).className = 'ms-dot done';
+  document.getElementById('mstep' + n).className = 'ms-step done';
+}
+
+// ── NAV WALLET ────────────────────────────────────────────────────────────────
+function renderWalletOptions() {
+  ['wn-wallet-list'].forEach(id => {
+    const list = document.getElementById(id);
+    if (!list) return;
+    list.innerHTML = '';
+    SUPPORTED_WALLETS.forEach(w => {
+      const installed = w.detect();
+      const btn = document.createElement('button');
+      btn.className = 'wallet-opt-btn' + (installed ? '' : ' not-installed');
+      btn.innerHTML = `
+        <div class="wo-icon">${w.icon}</div>
+        <div class="wo-meta">
+          <span class="wo-name">${w.name}</span>
+          <span class="wo-desc">${installed ? 'Detected in browser' : 'Not installed'}</span>
+        </div>
+        <span class="wo-badge ${installed ? 'badge-ok' : 'badge-get'}">${installed ? 'READY' : 'GET'}</span>
+      `;
+      if (installed) btn.onclick = () => doConnect(w.id);
+      else btn.onclick = () => window.open(w.installUrl, '_blank');
+      list.appendChild(btn);
+    });
+  });
+}
+
+async function doConnect(walletId) {
+  const navBtn = document.getElementById('nav-wallet-btn');
+  navBtn.textContent = 'CONNECTING...';
+  navBtn.disabled = true;
+  try {
+    await connectWalletById(walletId);
+    navBtn.textContent = formatAddress(CatPunkWallet.publicKeyStr) + ' ✓';
+    navBtn.className = 'nav-wallet-btn connected';
+    navBtn.disabled = false;
+    await fetchWalletNFTs();
+    buildGrid();
+    showToast('✅ Wallet connected!');
+  } catch(e) {
+    navBtn.textContent = 'CONNECT WALLET';
+    navBtn.disabled = false;
+    showToast('❌ ' + e.message, 'error');
+  }
+}
+
+async function handleNavWallet() {
+  if (CatPunkWallet.connected) { window.location.href = 'wallet.html'; return; }
+  document.getElementById('wn-section')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function getEmoji(rarity) {
+  return { common:'⚪', rare:'🔵', epic:'🟣', legendary:'🟡' }[rarity] || '🃏';
+}
+
+function showToast(msg, type='ok') {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.borderColor = type === 'error' ? 'var(--red)' : 'var(--green)';
+  t.style.color = type === 'error' ? 'var(--red)' : 'var(--green)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(),400); }, 3000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+buildGrid();
+renderWalletOptions();
+
+CatPunkWallet.on('connected', async () => {
+  const btn = document.getElementById('nav-wallet-btn');
+  btn.textContent = formatAddress(CatPunkWallet.publicKeyStr) + ' ✓';
+  btn.className = 'nav-wallet-btn connected';
+  await fetchWalletNFTs();
+  buildGrid();
+});
+
+// Re-render grid whenever NFTs are loaded from chain
+CatPunkWallet.on('nftsLoaded', () => {
+  buildGrid();
+});
+
+
+  // Update faucet link with wallet address
+  function updateFaucetLink() {
+    const link = document.getElementById('faucet-link');
+    if (link && CatPunkWallet.publicKeyStr) {
+      link.href = 'https://faucet.solana.com/?addr=' + CatPunkWallet.publicKeyStr;
+      link.textContent = '💧 GET FREE DEVNET SOL FOR ' + CatPunkWallet.publicKeyStr.slice(0,8) + '... ↗';
+    }
+  }
+  CatPunkWallet.on('connected', () => { updateFaucetLink(); });
+
+  window.addEventListener('load', async () => {
+  const restored = await tryRestoreSession();
+  if (restored) {
+    await fetchWalletNFTs();
+    buildGrid();
+  }
+});
+</script>
+<script>
+// ── CATPUNK Unified Navbar Mobile Toggle ──
+(function(){
+  var ham = document.querySelector('.nav-hamburger');
+  var drawer = document.querySelector('.nav-mobile-drawer');
+  if (!ham || !drawer) return;
+  ham.addEventListener('click', function(){
+    ham.classList.toggle('open');
+    drawer.classList.toggle('open');
+  });
+  // close drawer on link click
+  drawer.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      ham.classList.remove('open');
+      drawer.classList.remove('open');
+    });
+  });
+})();
+</script>
+</body>
+</html>

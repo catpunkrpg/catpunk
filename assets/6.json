@@ -1,0 +1,45 @@
+{
+  "name": "CATNAP GUARD",
+  "symbol": "CATPUNK",
+  "description": "CATNAP GUARD — A CatPunk Chaos battle card. Rarity: COMMON. Power: DEF 750.",
+  "seller_fee_basis_points": 500,
+  "image": "6.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Power",
+      "value": "DEF 750"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619901"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "1"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "6.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "name": "TIDAL CLAW",
+  "symbol": "CATPUNK",
+  "description": "TIDAL CLAW — A CatPunk Chaos battle card. Rarity: RARE. Power: ATK 2800.",
+  "seller_fee_basis_points": 500,
+  "image": "20.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 2800"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619927"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "2"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "20.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

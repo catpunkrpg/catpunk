@@ -1,0 +1,23 @@
+{
+  "name": "CatPunk Chaos",
+  "symbol": "CATPUNK",
+  "description": "CatPunk Chaos — 46 unique NFT battle cards. Fight, stake, and dominate the dungeon.",
+  "image": "collection.png",
+  "external_url": "https://catpunk.io",
+  "seller_fee_basis_points": 500,
+  "properties": {
+    "files": [
+      {
+        "uri": "collection.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  }
+}

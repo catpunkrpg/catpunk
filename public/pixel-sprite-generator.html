@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CATPUNK — Pixel Sprite Generator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&family=Share+Tech+Mono&display=swap');
+
+/* ── Variables ── */
+:root {
+  --bg:     #06070d;
+  --bg2:    #0c0e1a;
+  --bg3:    #111528;
+  --bg4:    #181c35;
+  --c1:     #00ffcc;   /* teal-mint accent */
+  --c2:     #ff3cac;   /* hot pink accent  */
+  --c3:     #f5c842;   /* gold             */
+  --c4:     #7b2fff;   /* deep purple      */
+  --green:  #39ff14;
+  --red:    #ff2d55;
+  --border: rgba(0,255,204,0.12);
+  --text:   #b8cce0;
+  --dim:    #334155;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+
+body {
+  font-family:'Share Tech Mono',monospace;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;flex-direction:column;height:100vh;
+}
+
+/* Scanlines */
+body::before{
+  content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.14) 3px,rgba(0,0,0,0.14) 4px);
+}
+/* Dot grid */
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(0,255,204,0.06) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+
+/* ══ HEADER ══ */
+.hdr{
+  position:relative;z-index:100;
+  height:50px;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(6,7,13,0.97);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.logo{
+  font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:3px;
+  color:var(--c1);
+  text-shadow:0 0 14px var(--c1),0 0 28px rgba(0,255,204,0.2);
+}
+.logo b{color:var(--c2)}
+.hdr-right{display:flex;align-items:center;gap:14px}
+.tag{
+  font-size:8px;padding:3px 9px;letter-spacing:1px;border-radius:2px;
+  border:1px solid rgba(0,255,204,0.25);color:var(--c1);
+}
+.hf-badge{
+  display:flex;align-items:center;gap:6px;font-size:9px;color:var(--dim);
+}
+.hf-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:all .3s}
+.hf-dot.ok {background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite}
+.hf-dot.err{background:var(--red);  box-shadow:0 0 8px var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ══ LAYOUT ══ */
+.wrap{
+  position:relative;z-index:10;
+  display:grid;grid-template-columns:290px 1fr;
+  flex:1;overflow:hidden;
+}
+
+/* ── LEFT ── */
+.left{
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;
+}
+.left::-webkit-scrollbar{width:3px}
+.left::-webkit-scrollbar-thumb{background:rgba(0,255,204,0.15);border-radius:2px}
+
+.sec{padding:14px 15px;border-bottom:1px solid var(--border)}
+
+.lbl{
+  font-family:'Press Start 2P',monospace;font-size:6px;
+  color:var(--c1);letter-spacing:2px;margin-bottom:10px;
+  display:flex;align-items:center;gap:7px;
+}
+.lbl::before{content:'▸';color:var(--c2);font-size:10px}
+
+/* Drop zone */
+.drop{
+  border:2px dashed rgba(0,255,204,0.2);border-radius:3px;
+  padding:18px 10px;text-align:center;cursor:pointer;
+  transition:all .2s;background:rgba(0,255,204,0.015);
+}
+.drop:hover,.drop.over{border-color:var(--c1);background:rgba(0,255,204,0.05)}
+.drop-ico{font-size:28px;display:block;margin-bottom:7px}
+.drop-main{font-size:9px;color:var(--c1);line-height:2}
+.drop-sub{font-size:8px;color:var(--dim);margin-top:3px}
+#file-inp{display:none}
+
+/* Preview */
+.prev-wrap{margin-top:10px;display:none;flex-direction:column;gap:7px}
+.prev-wrap.show{display:flex}
+.prev-frame{
+  width:100%;aspect-ratio:1;
+  background:repeating-conic-gradient(#0e0e14 0% 25%,#151520 0% 50%) 0 0/14px 14px;
+  border:1px solid var(--border);border-radius:3px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.prev-frame img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated}
+.prev-meta{display:flex;justify-content:space-between;font-size:8px;color:var(--dim)}
+.prev-meta span{color:var(--c1)}
+
+/* HF token */
+.hf-wrap{position:relative}
+.hf-inp{
+  width:100%;background:var(--bg3);border:1px solid var(--border);
+  color:var(--c1);font-family:'Share Tech Mono',monospace;font-size:10px;
+  padding:8px 34px 8px 9px;border-radius:2px;outline:none;
+}
+.hf-inp::placeholder{color:var(--dim)}
+.hf-inp:focus{border-color:var(--c1);box-shadow:0 0 8px rgba(0,255,204,0.12)}
+.hf-toggle{
+  position:absolute;right:7px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--dim);cursor:pointer;font-size:13px;
+}
+.hf-toggle:hover{color:var(--c1)}
+.hint{font-size:8px;color:var(--dim);margin-top:6px;line-height:1.8}
+.hint a{color:var(--c2);text-decoration:none}
+.hint a:hover{color:var(--c1)}
+
+/* Model selector */
+.model-cards{display:flex;flex-direction:column;gap:5px}
+.model-card{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 9px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:3px;
+  cursor:pointer;transition:all .15s;user-select:none;
+}
+.model-card:hover{border-color:rgba(0,255,204,0.3)}
+.model-card.on{border-color:var(--c1);background:rgba(0,255,204,0.06)}
+.model-card .mpip{
+  width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:all .15s;
+}
+.model-card.on .mpip{background:var(--c1);box-shadow:0 0 6px var(--c1)}
+.model-info{flex:1}
+.model-name{font-size:9px;color:var(--text)}
+.model-card.on .model-name{color:var(--c1)}
+.model-sub{font-size:7px;color:var(--dim);margin-top:2px}
+.model-badge{
+  font-size:7px;padding:2px 5px;border-radius:2px;letter-spacing:.5px;
+  background:rgba(245,200,66,0.1);border:1px solid rgba(245,200,66,0.3);color:var(--c3);
+}
+
+/* Chips */
+.chip-row{display:flex;gap:5px}
+.chip{
+  flex:1;padding:6px 3px;text-align:center;
+  background:var(--bg3);border:1px solid var(--border);
+  color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:9px;
+  border-radius:2px;cursor:pointer;transition:all .15s;
+}
+.chip.on{border-color:var(--c3);color:var(--c3);background:rgba(245,200,66,0.07)}
+
+/* Range */
+.range-row{display:flex;align-items:center;gap:9px}
+.range-row input[type=range]{flex:1;accent-color:var(--c2);cursor:pointer}
+.rval{font-size:12px;color:var(--c2);min-width:16px;text-align:right}
+
+/* Select */
+select{
+  width:100%;background:var(--bg3);border:1px solid var(--border);
+  color:var(--c1);font-family:'Share Tech Mono',monospace;font-size:9px;
+  padding:7px 8px;border-radius:2px;outline:none;cursor:pointer;appearance:none;
+}
+select:focus{border-color:var(--c1)}
+select option{background:var(--bg3)}
+
+/* Anim grid */
+.anim-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.ac{
+  display:flex;align-items:center;gap:5px;
+  padding:6px 8px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:2px;
+  cursor:pointer;user-select:none;transition:all .15s;font-size:9px;
+}
+.ac:hover{border-color:rgba(255,60,172,0.3)}
+.ac.on{border-color:var(--c2);background:rgba(255,60,172,0.08);color:#fff}
+.ac .ap{width:5px;height:5px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:all .15s}
+.ac.on .ap{background:var(--c2);box-shadow:0 0 5px var(--c2)}
+.ac .ai{font-size:10px}
+
+/* Generate btn */
+.btn-gen{
+  margin:13px 15px;padding:12px;
+  background:linear-gradient(135deg,#c0166e,var(--c2));
+  border:none;border-radius:2px;color:#fff;
+  font-family:'Press Start 2P',monospace;font-size:7px;letter-spacing:2px;
+  cursor:pointer;position:relative;overflow:hidden;transition:all .25s;
+}
+.btn-gen::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.13),transparent);
+  transform:translateX(-100%) skewX(-20deg);transition:transform .5s;
+}
+.btn-gen:hover::before{transform:translateX(200%) skewX(-20deg)}
+.btn-gen:hover{box-shadow:0 0 22px rgba(255,60,172,0.5);transform:translateY(-1px)}
+.btn-gen:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ── RIGHT ── */
+.right{display:flex;flex-direction:column;overflow:hidden}
+
+.topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 18px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.status-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 11px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:100px;font-size:9px;white-space:nowrap;
+}
+.sp-dot{width:6px;height:6px;border-radius:50%;background:var(--dim)}
+.sp-dot.spin{background:var(--c3);box-shadow:0 0 7px var(--c3);animation:blink .4s infinite}
+.sp-dot.ok  {background:var(--green);box-shadow:0 0 7px var(--green)}
+.sp-dot.err {background:var(--red);  box-shadow:0 0 7px var(--red)}
+
+.prog-track{flex:1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.prog-fill{
+  height:100%;width:0%;border-radius:2px;
+  background:linear-gradient(90deg,var(--c4),var(--c2),var(--c1));
+  transition:width .4s ease;
+}
+
+.btn-dla{
+  padding:5px 12px;background:transparent;
+  border:1px solid rgba(0,255,204,0.25);color:var(--c1);
+  font-family:'Share Tech Mono',monospace;font-size:8px;
+  cursor:pointer;border-radius:2px;transition:all .2s;white-space:nowrap;
+}
+.btn-dla:hover{background:rgba(0,255,204,0.07);border-color:var(--c1)}
+.btn-dla:disabled{opacity:.25;cursor:not-allowed}
+
+/* Output */
+.out-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:18px}
+.out-scroll::-webkit-scrollbar{width:4px}
+.out-scroll::-webkit-scrollbar-thumb{background:rgba(0,255,204,0.12);border-radius:2px}
+
+/* Empty */
+.empty{
+  height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:13px;
+  color:var(--dim);text-align:center;padding:40px;
+}
+.ei{font-size:50px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.et{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--dim)}
+.eb{font-size:9px;line-height:2;max-width:260px}
+.esteps{
+  font-size:8px;line-height:2.4;text-align:left;
+  border-left:2px solid var(--c2);padding-left:12px;color:var(--text);
+}
+.esteps span{color:var(--c2)}
+
+/* Anim section */
+.anim-sec{margin-bottom:28px}
+.anim-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);
+}
+.anim-title{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--c1);letter-spacing:2px}
+.anim-meta{font-size:8px;color:var(--dim);margin-top:3px}
+.btn-ds{
+  padding:4px 10px;background:transparent;
+  border:1px solid var(--border);color:var(--dim);
+  font-family:'Share Tech Mono',monospace;font-size:8px;
+  cursor:pointer;border-radius:2px;transition:all .2s;
+}
+.btn-ds:hover{border-color:var(--c1);color:var(--c1)}
+
+/* Frames */
+.frames-row{display:flex;gap:7px;flex-wrap:wrap}
+
+.fcard{
+  display:flex;flex-direction:column;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:3px;overflow:hidden;
+  transition:all .2s;cursor:pointer;
+}
+.fcard:hover{border-color:var(--c1);box-shadow:0 0 12px rgba(0,255,204,0.1);transform:translateY(-2px)}
+
+.fimg{
+  width:112px;height:112px;
+  background:repeating-conic-gradient(#0f0f15 0% 25%,#161620 0% 50%) 0 0/12px 12px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.fimg img{
+  max-width:100%;max-height:100%;object-fit:contain;
+  image-rendering:pixelated;image-rendering:crisp-edges;
+}
+.fnum{
+  position:absolute;bottom:3px;right:4px;
+  font-family:'VT323',monospace;font-size:14px;color:rgba(255,255,255,0.4);
+}
+.fhov{
+  position:absolute;inset:0;
+  background:rgba(0,255,204,0.08);opacity:0;
+  transition:opacity .2s;display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.fcard:hover .fhov{opacity:1}
+
+.ffoot{
+  padding:4px 7px;display:flex;align-items:center;justify-content:space-between;
+  font-size:8px;color:var(--dim);background:var(--bg3);
+}
+.fdl{background:none;border:none;color:var(--dim);font-size:11px;cursor:pointer;padding:2px;transition:color .15s}
+.fdl:hover{color:var(--c1)}
+
+/* Skeleton */
+.fskel{
+  width:112px;height:128px;border-radius:3px;border:1px solid var(--border);
+  background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);
+  background-size:200% 100%;animation:skel 1.4s ease-in-out infinite;
+}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Strip */
+.strip-wrap{
+  margin-top:9px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);
+  border-radius:3px;display:none;align-items:center;gap:8px;overflow-x:auto;
+}
+.strip-wrap.show{display:flex}
+.slbl{font-size:7px;color:var(--dim);white-space:nowrap}
+.simgs{display:flex;gap:1px;align-items:center}
+.simgs img{height:50px;width:auto;image-rendering:pixelated;border:1px solid rgba(255,255,255,0.04)}
+
+/* Lightbox */
+.lb{
+  position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.94);
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+}
+.lb.show{display:flex}
+.lb img{
+  max-width:82vw;max-height:72vh;
+  image-rendering:pixelated;image-rendering:crisp-edges;
+  border:2px solid var(--c1);box-shadow:0 0 40px rgba(0,255,204,0.2);display:block;
+}
+.lb-close{
+  position:fixed;top:18px;right:22px;
+  font-family:'Press Start 2P',monospace;font-size:9px;
+  color:var(--c1);background:none;border:none;cursor:pointer;
+}
+.lb-acts{display:flex;gap:8px}
+.lb-btn{
+  padding:6px 14px;background:var(--bg2);border:1px solid var(--border);
+  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:9px;
+  cursor:pointer;border-radius:2px;transition:all .2s;
+}
+.lb-btn:hover{border-color:var(--c1);color:var(--c1)}
+.lb-inf{font-size:9px;color:var(--dim)}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:20px;right:20px;z-index:20000;
+  padding:9px 16px;background:var(--bg2);border-left:3px solid var(--c1);
+  font-size:9px;border-radius:2px;
+  transform:translateX(120%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+  max-width:300px;
+}
+.toast.show{transform:translateX(0)}
+.toast.ok {border-color:var(--green)}
+.toast.err{border-color:var(--red)}
+
+.field{display:flex;flex-direction:column;gap:5px}
+.flbl{font-size:8px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+
+/* ═══════════════════════════════════════
+   CATPUNK UNIFIED NAVBAR — mobile-ready
+   ═══════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 1000;
+  height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(8,8,16,.97);
+  border-bottom: 2px solid var(--gold, #f5c842);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.nav-logo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: var(--gold, #f5c842);
+  text-decoration: none;
+  display: flex; align-items: center; gap: 10px;
+  text-shadow: 2px 2px 0 #000;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-logo .cat { animation: bob 2s ease-in-out infinite; display: inline-block; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+.nav-links {
+  display: flex; gap: 4px; align-items: center;
+  list-style: none; margin: 0; padding: 0;
+}
+.nav-links a {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: #888;
+  text-decoration: none;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.nav-links a:hover { color: var(--cyan, #00f5ff); border-color: var(--cyan, #00f5ff); background: rgba(0,245,255,.07); }
+.nav-back-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  color: var(--gold, #f5c842);
+  text-decoration: none;
+  padding: 7px 12px;
+  border: 1px solid var(--gold, #f5c842);
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .2s;
+}
+.nav-back-btn:hover { background: var(--gold, #f5c842); color: #000; }
+.nav-hamburger {
+  display: none;
+  flex-direction: column; justify-content: center; align-items: center;
+  width: 36px; height: 36px;
+  background: none; border: 1px solid #444; border-radius: 4px;
+  cursor: pointer; gap: 5px; padding: 0; flex-shrink: 0;
+}
+.nav-hamburger span { display: block; width: 18px; height: 2px; background: var(--gold, #f5c842); transition: all .25s; }
+.nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; }
+.nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.nav-mobile-drawer {
+  display: none; position: fixed; top: 54px; left: 0; right: 0;
+  background: rgba(8,8,16,.99); border-bottom: 2px solid var(--gold, #f5c842);
+  flex-direction: column; padding: 16px 24px 20px; gap: 8px; z-index: 999;
+}
+.nav-mobile-drawer.open { display: flex; }
+.nav-mobile-drawer a {
+  font-family: 'Press Start 2P', monospace; font-size: 9px;
+  color: #888; text-decoration: none; letter-spacing: 1px;
+  padding: 10px 0; border-bottom: 1px solid #1a1a2e; transition: color .2s;
+}
+.nav-mobile-drawer a:hover { color: var(--cyan, #00f5ff); }
+@media (max-width: 640px) {
+  .nav-links { display: none; }
+  .nav-hamburger { display: flex; }
+}
+@media (max-width: 480px) {
+  nav { padding: 0 14px; }
+  .nav-logo { font-size: 9px; }
+  .nav-back-btn { display: none; }
+}
+body { padding-top: 54px; }
+
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="index.html"><span class="cat">😼</span> CATPUNK</a>
+  <ul class="nav-links">
+    <li><a href="mint.html">MINT</a></li>
+    <li><a href="equip.html">CARDS</a></li>
+    <li><a href="staking.html">STAKING</a></li>
+    <li><a href="wallet.html">WALLET</a></li>
+  </ul>
+  <a class="nav-back-btn" href="index.html">◀ HOME</a>
+  <button class="nav-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="nav-mobile-drawer">
+  <a href="index.html">HOME</a>
+  <a href="game.html">PLAY</a>
+  <a href="mint.html">MINT</a>
+  <a href="equip.html">CARDS</a>
+  <a href="staking.html">STAKING</a>
+  <a href="wallet.html">WALLET</a>
+</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo">CAT<b>PUNK</b> · SPRITE<b>GEN</b></div>
+  <div class="hdr-right">
+    <div class="tag">HF · NODE PROXY · FREE</div>
+    <div class="hf-badge">
+      <div class="hf-dot" id="hf-dot"></div>
+      <span id="hf-st">no token</span>
+    </div>
+  </div>
+</header>
+
+<!-- WORKSPACE -->
+<div class="wrap">
+
+  <!-- LEFT PANEL -->
+  <div class="left">
+
+    <!-- Upload -->
+    <div class="sec">
+      <div class="lbl">CHARACTER IMAGE</div>
+      <div class="drop" id="drop">
+        <span class="drop-ico">🎮</span>
+        <div class="drop-main">DROP IMAGE HERE<br>or click to browse</div>
+        <div class="drop-sub">PNG · JPG · WEBP · max 10MB</div>
+      </div>
+      <input type="file" id="file-inp" accept="image/*">
+      <div class="prev-wrap" id="prev-wrap">
+        <div class="prev-frame"><img id="prev-img" src="" alt=""></div>
+        <div class="prev-meta"><span id="pname">—</span><span id="psize">—</span></div>
+      </div>
+    </div>
+
+    <!-- Proxy URL -->
+    <div class="sec">
+      <div class="lbl">PROXY URL</div>
+      <div class="hf-wrap">
+        <input class="hf-inp" type="text" id="proxy-url" placeholder="http://localhost:3001">
+        <button class="hf-toggle" id="proxy-test" title="Test">&#9889;</button>
+      </div>
+      <div class="hint">
+        Jalankan: <b style="color:var(--c3)">node proxy.js</b><br>
+        HF token aman di <b style="color:var(--c2)">.env</b> server.
+      </div>
+      <div id="proxy-status" style="display:none;margin-top:8px;font-size:8px;padding:7px 9px;border-radius:3px;border:1px solid;line-height:1.7"></div>
+    </div>
+
+    <!-- Model -->
+    <div class="sec">
+      <div class="lbl">PIXEL ART MODEL</div>
+      <div class="model-cards" id="model-cards">
+
+        <div class="model-card on" data-model="black-forest-labs/FLUX.1-dev">
+          <div class="mpip"></div>
+          <div class="model-info">
+            <div class="model-name">FLUX.1-dev</div>
+            <div class="model-sub">black-forest-labs · best quality</div>
+          </div>
+          <div class="model-badge">⭐ BEST</div>
+        </div>
+
+        <div class="model-card" data-model="black-forest-labs/FLUX.1-schnell">
+          <div class="mpip"></div>
+          <div class="model-info">
+            <div class="model-name">FLUX.1-schnell</div>
+            <div class="model-sub">black-forest-labs · fastest</div>
+          </div>
+          <div class="model-badge" style="color:#a78bfa;border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.07)">⚡ FAST</div>
+        </div>
+
+        <div class="model-card" data-model="stabilityai/stable-diffusion-xl-base-1.0">
+          <div class="mpip"></div>
+          <div class="model-info">
+            <div class="model-name">SDXL Base 1.0</div>
+            <div class="model-sub">stabilityai · versatile</div>
+          </div>
+        </div>
+
+        <div class="model-card" data-model="stabilityai/stable-diffusion-2-1">
+          <div class="mpip"></div>
+          <div class="model-info">
+            <div class="model-name">Stable Diffusion 2.1</div>
+            <div class="model-sub">stabilityai · lightweight</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="sec">
+      <div class="lbl">SETTINGS</div>
+      <div class="row2">
+        <div class="field">
+          <div class="flbl">TILE SIZE</div>
+          <div class="chip-row">
+            <div class="chip" data-sz="16">16</div>
+            <div class="chip on" data-sz="32">32</div>
+            <div class="chip" data-sz="48">48</div>
+            <div class="chip" data-sz="64">64</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="flbl">FRAMES</div>
+          <div class="range-row">
+            <input type="range" id="fslider" min="2" max="8" value="4" step="1">
+            <span class="rval" id="fval">4</span>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:8px">
+        <div class="flbl">PIXEL STYLE PROMPT</div>
+        <select id="style-sel">
+          <option value="16-bit SNES RPG pixel art sprite, colorful, top-down">16-bit SNES RPG</option>
+          <option value="8-bit NES pixel art sprite, limited palette, retro">8-bit NES</option>
+          <option value="Game Boy pixel art, green monochrome, 4-color palette">Game Boy</option>
+          <option value="chibi pixel art character, cute proportions, pastel">Chibi / SD</option>
+          <option value="fighting game pixel art, Street Fighter style, detailed">Fighting Game</option>
+          <option value="isometric pixel art character, 2.5D perspective">Isometric</option>
+          <option value="RPG Maker style pixel art character sprite, top-down">RPG Maker</option>
+          <option value="modern indie pixel art, Celeste style, expressive">Indie / Celeste</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="flbl">BACKGROUND</div>
+        <select id="bg-sel">
+          <option value="pure white background, isolated sprite">White (for cutout)</option>
+          <option value="transparent background, no background">Transparent</option>
+          <option value="solid black background">Black</option>
+          <option value="chroma key green #00FF00 background">Green Screen</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Animations -->
+    <div class="sec">
+      <div class="lbl">ANIMATIONS</div>
+      <div class="anim-grid">
+        <div class="ac on" data-a="idle">  <div class="ap"></div><span class="ai">🧍</span>IDLE</div>
+        <div class="ac on" data-a="walk">  <div class="ap"></div><span class="ai">🚶</span>WALK</div>
+        <div class="ac on" data-a="run">   <div class="ap"></div><span class="ai">🏃</span>RUN</div>
+        <div class="ac on" data-a="attack"><div class="ap"></div><span class="ai">⚔️</span>ATTACK</div>
+        <div class="ac"    data-a="jump">  <div class="ap"></div><span class="ai">🦘</span>JUMP</div>
+        <div class="ac"    data-a="hurt">  <div class="ap"></div><span class="ai">💥</span>HURT</div>
+        <div class="ac"    data-a="die">   <div class="ap"></div><span class="ai">💀</span>DIE</div>
+        <div class="ac"    data-a="cast">  <div class="ap"></div><span class="ai">✨</span>CAST</div>
+        <div class="ac"    data-a="block"> <div class="ap"></div><span class="ai">🛡️</span>BLOCK</div>
+        <div class="ac"    data-a="dash">  <div class="ap"></div><span class="ai">💨</span>DASH</div>
+      </div>
+    </div>
+
+    <button class="btn-gen" id="btn-gen" disabled>⚡ GENERATE SPRITES</button>
+
+  </div><!-- /left -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right">
+
+    <div class="topbar">
+      <div class="status-pill">
+        <div class="sp-dot" id="sp-dot"></div>
+        <span id="sp-txt">Upload image &amp; enter HF token</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="prog"></div></div>
+      <button class="btn-dla" id="btn-dla" disabled>⬇ DOWNLOAD ALL</button>
+    </div>
+
+    <div class="out-scroll" id="out-scroll">
+      <div class="empty" id="empty">
+        <div class="ei">🕹️</div>
+        <div class="et">NO SPRITES YET</div>
+        <div class="eb">Real AI pixel art via Hugging Face Inference API — 100% gratis!</div>
+        <div class="esteps">
+          <span>01</span> Buat .env, isi HF_TOKEN<br>
+          <span>02</span> Jalankan: node proxy.js<br>
+          <span>03</span> Paste proxy URL &amp; test ⚡<br>
+          <span>04</span> Upload karakter &amp; Generate<br>
+          <span>05</span> Download frames / strips
+        </div>
+      </div>
+      <div id="results"></div>
+    </div>
+
+  </div><!-- /right -->
+
+</div><!-- /wrap -->
+
+<!-- Lightbox -->
+<div class="lb" id="lb">
+  <button class="lb-close" id="lb-close">✕ CLOSE</button>
+  <img id="lb-img" src="" alt="">
+  <div class="lb-acts">
+    <button class="lb-btn" id="lb-dl">⬇ DOWNLOAD</button>
+    <button class="lb-btn" id="lb-orig">↗ OPEN ORIGINAL</button>
+  </div>
+  <div class="lb-inf" id="lb-inf"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// ── State ─────────────────────────────────────────────────────
+const S = {
+  imgDataUrl:  null,
+  proxyUrl:    '',
+  proxyOk:     false,
+  model:       'black-forest-labs/FLUX.1-dev',
+  sz:          32,
+  frames:      4,
+  anims:       ['idle','walk','run','attack'],
+  results:     {},
+  generating:  false,
+  lbUrl:'', lbName:'',
+};
+
+// ── DOM ───────────────────────────────────────────────────────
+const $   = id => document.getElementById(id);
+const drop     = $('drop');
+const fileInp  = $('file-inp');
+const prevWrap = $('prev-wrap');
+const prevImg  = $('prev-img');
+const hfDot    = $('hf-dot');
+const hfSt     = $('hf-st');
+const btnGen   = $('btn-gen');
+const btnDla   = $('btn-dla');
+const spDot    = $('sp-dot');
+const spTxt    = $('sp-txt');
+const progEl   = $('prog');
+const results  = $('results');
+const emptyEl  = $('empty');
+const lb       = $('lb');
+const lbImg    = $('lb-img');
+const lbInf    = $('lb-inf');
+
+// ── Upload ────────────────────────────────────────────────────
+drop.addEventListener('click', ()=>fileInp.click());
+drop.addEventListener('dragover', e=>{e.preventDefault();drop.classList.add('over')});
+drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
+drop.addEventListener('drop', e=>{e.preventDefault();drop.classList.remove('over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])});
+fileInp.addEventListener('change', ()=>{if(fileInp.files[0])handleFile(fileInp.files[0])});
+
+function handleFile(f){
+  if(!f.type.startsWith('image/')){toast('Bukan file gambar','err');return}
+  if(f.size>10*1024*1024){toast('Max 10MB','err');return}
+  const r=new FileReader();
+  r.onload=e=>{
+    S.imgDataUrl=e.target.result;
+    prevImg.src=e.target.result;
+    $('pname').textContent=f.name.length>20?f.name.slice(0,18)+'…':f.name;
+    $('psize').textContent=(f.size/1024).toFixed(0)+' KB';
+    prevWrap.classList.add('show');
+    checkReady();
+  };
+  r.readAsDataURL(f);
+}
+
+// ── Proxy URL ─────────────────────────────────────────────────
+$('proxy-url').addEventListener('input',()=>{
+  S.proxyUrl=$('proxy-url').value.trim().replace(/\/$/,'');
+  S.proxyOk=false;
+  const looks=S.proxyUrl.startsWith('http')&&S.proxyUrl.length>10;
+  hfDot.className='hf-dot'+(looks?'':' err');
+  hfSt.textContent=looks?'URL ok — test ⚡':'enter URL';
+  checkReady();
+});
+
+$('proxy-test').addEventListener('click', async ()=>{
+  const url=S.proxyUrl||$('proxy-url').value.trim();
+  if(!url){toast('Masukkan proxy URL dulu','err');return}
+  S.proxyUrl=url.replace(/\/$/,'');
+  const box=$('proxy-status');
+  box.style.display='block';
+  box.style.borderColor='rgba(245,200,66,.4)';
+  box.style.color='var(--c3)';
+  box.style.background='rgba(245,200,66,.05)';
+  box.innerHTML='⏳ Testing…';
+  try{
+    const r=await fetch(S.proxyUrl+'/health',{signal:AbortSignal.timeout(6000)});
+    const d=await r.json();
+    if(r.ok&&d.status==='ok'){
+      S.proxyOk=true;
+      hfDot.className='hf-dot ok';
+      hfSt.textContent='proxy connected ✓';
+      box.style.borderColor='rgba(57,255,20,.4)';
+      box.style.color='var(--green)';
+      box.style.background='rgba(57,255,20,.05)';
+      box.innerHTML='✅ Proxy OK! Token HF: <b>'+d.token+'</b>';
+      checkReady();
+      toast('Proxy connected!','ok');
+    } else { throw new Error(JSON.stringify(d)); }
+  }catch(e){
+    S.proxyOk=false;
+    hfDot.className='hf-dot err';
+    hfSt.textContent='gagal konek';
+    box.style.borderColor='rgba(255,45,85,.4)';
+    box.style.color='var(--red)';
+    box.style.background='rgba(255,45,85,.05)';
+    box.innerHTML='❌ '+e.message+'<br><small>Sudah jalankan <b>node proxy.js</b>?</small>';
+    toast('Proxy test gagal','err');
+  }
+});
+
+// ── Model ─────────────────────────────────────────────────────
+document.querySelectorAll('.model-card').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.model-card').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on');
+  S.model=c.dataset.model;
+}));
+
+// ── Settings controls ─────────────────────────────────────────
+document.querySelectorAll('.chip[data-sz]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-sz]').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on'); S.sz=parseInt(c.dataset.sz);
+}));
+
+const fslider=$('fslider'),fval=$('fval');
+fslider.addEventListener('input',()=>{S.frames=parseInt(fslider.value);fval.textContent=S.frames});
+
+document.querySelectorAll('.ac').forEach(c=>c.addEventListener('click',()=>{
+  c.classList.toggle('on');
+  const a=c.dataset.a;
+  S.anims=c.classList.contains('on')?[...S.anims.filter(x=>x!==a),a]:S.anims.filter(x=>x!==a);
+}));
+
+function checkReady(){
+  const proxySet=S.proxyUrl.startsWith('http')&&S.proxyUrl.length>10;
+  btnGen.disabled=!(S.imgDataUrl&&proxySet&&S.anims.length>0)||S.generating;
+}
+
+// ── GENERATE ──────────────────────────────────────────────────
+btnGen.addEventListener('click', generateAll);
+
+async function generateAll(){
+  if(S.generating)return;
+  S.generating=true; S.results={};
+  btnGen.disabled=true; btnDla.disabled=true;
+  emptyEl.style.display='none'; results.innerHTML='';
+
+  const total=S.anims.length*S.frames;
+  let done=0;
+  setSt('spin',`Memulai — ${total} frame untuk di-generate…`);
+  setP(3);
+
+  // Skeletons
+  S.anims.forEach(a=>{S.results[a]=[];results.insertAdjacentHTML('beforeend',skelSec(a))});
+
+  try{
+    for(const anim of S.anims){
+      setSt('spin',`GENERATING: ${anim.toUpperCase()} · ${S.frames} frames…`);
+      for(let i=0;i<S.frames;i++){
+        const url=await genFrame(anim,i);
+        S.results[anim].push(url);
+        replSkel(anim,i,url);
+        done++;
+        setP(5+(done/total)*90);
+      }
+      updMeta(anim);
+      buildStrip(anim);
+    }
+    setP(100);
+    setTimeout(()=>setP(0),1200);
+    setSt('ok',`✓ Selesai! ${total} frame berhasil di-generate.`);
+    btnDla.disabled=false;
+    toast(`✅ ${S.anims.length} animasi siap!`,'ok');
+  }catch(err){
+    setSt('err','Error: '+err.message);
+    toast('Gagal: '+err.message,'err');
+    setP(0);console.error(err);
+  }
+  S.generating=false;checkReady();
+}
+
+// ── Animation prompt templates ────────────────────────────────
+const PROMPTS={
+  idle:  (f,n)=>`standing idle pose, subtle breathing, frame ${f+1} of ${n}, relaxed stance`,
+  walk:  (f,n)=>`walking cycle frame ${f+1} of ${n}, leg stride at ${Math.round(f/n*100)}%, side view`,
+  run:   (f,n)=>`running cycle frame ${f+1} of ${n}, fast movement, dynamic pose, leaning forward`,
+  attack:(f,n)=>`attack animation frame ${f+1} of ${n}, weapon swing, action pose, striking`,
+  jump:  (f,n)=>`jump animation frame ${f+1} of ${n}, ${f<n/2?'rising up, legs tucked':'falling down, landing'}`,
+  hurt:  (f,n)=>`hurt reaction frame ${f+1} of ${n}, knockback, recoiling in pain`,
+  die:   (f,n)=>`death animation frame ${f+1} of ${n}, ${Math.round(f/n*100)}% fallen, collapse`,
+  cast:  (f,n)=>`magic casting pose frame ${f+1} of ${n}, glowing hands, spell energy, mystical`,
+  block: (f,n)=>`defensive block pose frame ${f+1} of ${n}, shield raised, guarding stance`,
+  dash:  (f,n)=>`dash dodge frame ${f+1} of ${n}, fast horizontal movement, speed motion blur`,
+};
+
+// ── Call proxy → HF ──────────────────────────────────────────
+async function genFrame(anim, fi){
+  const style   = $('style-sel').value;
+  const bg      = $('bg-sel').value;
+  const animTxt = (PROMPTS[anim]||((f,n)=>`${anim} pose frame ${f+1}`))(fi,S.frames);
+
+  const prompt=`pixel art game character sprite, ${animTxt}, ${style}, ${bg}, `+
+    `single character centered, sharp clean pixels, ${S.sz}x${S.sz} sprite, `+
+    `no text, no border, game ready asset, high quality pixel art`;
+
+  const neg=`blurry, photorealistic, 3d render, multiple characters, background scenery, `+
+    `text, watermark, extra limbs, deformed, ugly, low quality, noise, jpeg artifacts`;
+
+  const res=await fetch(`${S.proxyUrl}/api/generate?model=${encodeURIComponent(S.model)}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      inputs: prompt,
+      parameters:{
+        negative_prompt: neg,
+        num_inference_steps: 25,
+        guidance_scale: 7.5,
+        width:  512,
+        height: 512,
+      },
+      options:{ wait_for_model:true, use_cache:false }
+    })
+  });
+
+  if(!res.ok){
+    let errMsg=`Proxy error ${res.status}`;
+    try{const j=await res.json();errMsg=j.error||errMsg}catch{}
+    if(res.status===401) throw new Error('Token HF tidak valid di proxy. Cek file .env');
+    if(res.status===503) throw new Error('Model HF sedang loading (~20 dtk), coba lagi sebentar');
+    throw new Error(errMsg);
+  }
+
+  // Proxy returns raw image blob
+  const ct=res.headers.get('content-type')||'';
+  if(!ct.startsWith('image/')){
+    const txt=await res.text();
+    throw new Error('Bukan gambar: '+txt.slice(0,80));
+  }
+  const blob=await res.blob();
+
+  // Pixelate: downscale → upscale for crisp pixel look
+  return await pixelate(blob,S.sz);
+}
+
+// ── Pixelate: downscale → upscale for pixel art feel ─────────
+function pixelate(blob,sz){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    const srcUrl=URL.createObjectURL(blob);
+    img.onload=()=>{
+      // Step 1: downscale to target sprite size
+      const c1=document.createElement('canvas');
+      c1.width=sz;c1.height=sz;
+      const g1=c1.getContext('2d');
+      g1.imageSmoothingEnabled=true;
+      g1.imageSmoothingQuality='high';
+      g1.drawImage(img,0,0,sz,sz);
+
+      // Step 2: upscale back with NO smoothing → crisp pixels
+      const disp=Math.max(sz*4,256);
+      const c2=document.createElement('canvas');
+      c2.width=disp;c2.height=disp;
+      const g2=c2.getContext('2d');
+      g2.imageSmoothingEnabled=false;
+      g2.drawImage(c1,0,0,disp,disp);
+
+      URL.revokeObjectURL(srcUrl);
+      c2.toBlob(b=>resolve(URL.createObjectURL(b)),'image/png');
+    };
+    img.onerror=()=>{URL.revokeObjectURL(srcUrl);reject(new Error('Gagal load gambar'))};
+    img.src=srcUrl;
+  });
+}
+
+// ── DOM builders ──────────────────────────────────────────────
+function skelSec(anim){
+  const sk=Array.from({length:S.frames},(_,i)=>
+    `<div class="fskel" id="sk-${anim}-${i}"></div>`).join('');
+  return `
+  <div class="anim-sec" id="sec-${anim}">
+    <div class="anim-hdr">
+      <div>
+        <div class="anim-title">${anim.toUpperCase()}</div>
+        <div class="anim-meta" id="meta-${anim}">${S.frames} frames · ${S.sz}px · generating…</div>
+      </div>
+      <button class="btn-ds" onclick="dlStrip('${anim}')">⬇ STRIP</button>
+    </div>
+    <div class="frames-row" id="fr-${anim}">${sk}</div>
+    <div class="strip-wrap" id="sw-${anim}">
+      <span class="slbl">PREVIEW STRIP:</span>
+      <div class="simgs" id="si-${anim}"></div>
+    </div>
+  </div>`;
+}
+
+function replSkel(anim,idx,url){
+  const sk=$(`sk-${anim}-${idx}`);if(!sk)return;
+  const card=document.createElement('div');
+  card.className='fcard';card.id=`fc-${anim}-${idx}`;
+  card.innerHTML=`
+    <div class="fimg" onclick="openLb('${url}','${anim} · frame ${idx+1}')">
+      <img src="${url}" alt="">
+      <span class="fnum">${idx+1}</span>
+      <div class="fhov">🔍</div>
+    </div>
+    <div class="ffoot">
+      <span>f${idx+1}</span>
+      <button class="fdl" onclick="dlFrame('${url}','${anim}_f${idx+1}.png')" title="Download">⬇</button>
+    </div>`;
+  sk.replaceWith(card);
+}
+
+function updMeta(anim){
+  const el=$(`meta-${anim}`);
+  if(el)el.textContent=`${S.frames} frames · ${S.sz}px · done ✓`;
+}
+
+function buildStrip(anim){
+  const urls=S.results[anim];if(!urls||!urls.length)return;
+  const si=$(`si-${anim}`);
+  if(si)si.innerHTML=urls.map(u=>`<img src="${u}" alt="">`).join('');
+  const sw=$(`sw-${anim}`);if(sw)sw.classList.add('show');
+}
+
+// ── Downloads ─────────────────────────────────────────────────
+function dlFrame(url,name){
+  const a=document.createElement('a');
+  a.href=url;a.download=name;a.click();
+  toast('⬇ '+name,'ok');
+}
+
+function dlStrip(anim){
+  const urls=S.results[anim];
+  if(!urls||!urls.length){toast('Belum ada frame untuk '+anim,'err');return}
+  const disp=Math.max(S.sz*4,256),count=urls.length;
+  const cv=document.createElement('canvas');cv.width=disp*count;cv.height=disp;
+  const ctx=cv.getContext('2d');let loaded=0;
+  urls.forEach((url,i)=>{
+    const img=new Image();
+    img.onload=()=>{
+      ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(img,i*disp,0,disp,disp);
+      if(++loaded===count){
+        cv.toBlob(b=>{
+          const a=document.createElement('a');
+          a.download=`${anim}_strip.png`;
+          a.href=URL.createObjectURL(b);
+          a.click();
+          toast(`⬇ ${anim} strip downloaded!`,'ok');
+        },'image/png');
+      }
+    };
+    img.src=url;
+  });
+}
+
+btnDla.addEventListener('click',()=>{
+  S.anims.forEach(a=>{if(S.results[a]?.length)dlStrip(a)});
+});
+
+// ── Lightbox ──────────────────────────────────────────────────
+function openLb(url,label){
+  S.lbUrl=url;S.lbName=label.replace(/[^a-z0-9_\-]/gi,'_')+'.png';
+  lbImg.src=url;lbInf.textContent=label;lb.classList.add('show');
+}
+$('lb-close').addEventListener('click',()=>lb.classList.remove('show'));
+lb.addEventListener('click',e=>{if(e.target===lb)lb.classList.remove('show')});
+$('lb-dl').addEventListener('click',()=>dlFrame(S.lbUrl,S.lbName));
+$('lb-orig').addEventListener('click',()=>window.open(S.lbUrl,'_blank'));
+
+// ── Utils ─────────────────────────────────────────────────────
+function setSt(state,msg){
+  spDot.className='sp-dot'+({spin:' spin',ok:' ok',err:' err'}[state]||'');
+  spTxt.textContent=msg;
+}
+function setP(p){progEl.style.width=Math.min(100,p)+'%'}
+function toast(msg,type=''){
+  const el=$('toast');
+  el.textContent=msg;el.className='toast '+type;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3500);
+}
+
+// expose for inline handlers
+window.openLb=openLb;window.dlFrame=dlFrame;window.dlStrip=dlStrip;
+</script>
+<script>
+(function(){
+  var ham = document.querySelector('.nav-hamburger');
+  var drawer = document.querySelector('.nav-mobile-drawer');
+  if (!ham || !drawer) return;
+  ham.addEventListener('click', function(){
+    ham.classList.toggle('open'); drawer.classList.toggle('open');
+  });
+  drawer.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', function(){
+      ham.classList.remove('open'); drawer.classList.remove('open');
+    });
+  });
+})();
+</script>
+</body>
+</html>

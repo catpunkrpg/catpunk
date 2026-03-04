@@ -1,0 +1,45 @@
+{
+  "name": "NEON HURRICANE",
+  "symbol": "CATPUNK",
+  "description": "NEON HURRICANE — A CatPunk Chaos battle card. Rarity: EPIC. Power: SPD +80%.",
+  "seller_fee_basis_points": 500,
+  "image": "38.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Power",
+      "value": "SPD +80%"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356620000"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "3"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "38.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

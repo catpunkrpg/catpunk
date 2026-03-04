@@ -1,0 +1,45 @@
+{
+  "name": "NEON SCRATCH",
+  "symbol": "CATPUNK",
+  "description": "NEON SCRATCH — A CatPunk Chaos battle card. Rarity: COMMON. Power: ATK 1000.",
+  "seller_fee_basis_points": 500,
+  "image": "13.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 1000"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619913"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "1"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "13.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

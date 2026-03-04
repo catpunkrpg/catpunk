@@ -1,0 +1,45 @@
+{
+  "name": "VOID CLAW",
+  "symbol": "CATPUNK",
+  "description": "VOID CLAW — A CatPunk Chaos battle card. Rarity: EPIC. Power: ATK 5100.",
+  "seller_fee_basis_points": 500,
+  "image": "34.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 5100"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619995"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "3"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "34.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

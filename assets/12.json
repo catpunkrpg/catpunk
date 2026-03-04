@@ -1,0 +1,45 @@
+{
+  "name": "STATIC FUR",
+  "symbol": "CATPUNK",
+  "description": "STATIC FUR — A CatPunk Chaos battle card. Rarity: COMMON. Power: DEF 800.",
+  "seller_fee_basis_points": 500,
+  "image": "12.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Power",
+      "value": "DEF 800"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619912"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "1"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "12.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

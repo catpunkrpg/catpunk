@@ -1,0 +1,45 @@
+{
+  "name": "LASER CLAW",
+  "symbol": "CATPUNK",
+  "description": "LASER CLAW — A CatPunk Chaos battle card. Rarity: RARE. Power: ATK 3000.",
+  "seller_fee_basis_points": 500,
+  "image": "31.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 3000"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619956"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "2"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "31.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

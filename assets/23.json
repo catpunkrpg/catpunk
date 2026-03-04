@@ -1,0 +1,45 @@
+{
+  "name": "IRON FUR",
+  "symbol": "CATPUNK",
+  "description": "IRON FUR — A CatPunk Chaos battle card. Rarity: RARE. Power: DEF +3200.",
+  "seller_fee_basis_points": 500,
+  "image": "23.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Power",
+      "value": "DEF +3200"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356619931"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "2"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "23.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

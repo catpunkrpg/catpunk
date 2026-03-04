@@ -1,0 +1,45 @@
+{
+  "name": "COSMIC SLASH",
+  "symbol": "CATPUNK",
+  "description": "COSMIC SLASH — A CatPunk Chaos battle card. Rarity: LEGENDARY. Power: ATK 12000.",
+  "seller_fee_basis_points": 500,
+  "image": "43.png",
+  "external_url": "https://catpunk.io",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Power",
+      "value": "ATK 12000"
+    },
+    {
+      "trait_type": "Card ID",
+      "value": "6077954387356620093"
+    },
+    {
+      "trait_type": "Rarity Score",
+      "value": "4"
+    }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "43.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image",
+    "creators": [
+      {
+        "address": "638SVmhGdA5v7ckrgGsbMyXXzGBmKGCP6P5VrL8HeAz5",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "CatPunk Chaos",
+    "family": "CatPunk"
+  }
+}

@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Cat Punk — Online RPG</title>
+<!--
+  game.html  — ENGINE ONLY (no map data stored here)
+  Map data   → map.js          (edit ini untuk ubah layout)
+  Map editor → map-editor.html (visual drag-drop editor)
+-->
+<script src="map.js"></script>
+<script src="map-system.js"></script> <!-- Multi-level dungeon engine -->
+<script src="/socket.io/socket.io.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+/* Card HUD */
+#card-hud{position:absolute;top:12px;right:12px;
+  background:rgba(20,0,40,.95);border:2px solid #9b30ff;border-radius:8px;
+  padding:10px 14px;min-width:170px;box-shadow:0 0 12px rgba(155,48,255,.4);
+  display:none;z-index:10;font-family:'Press Start 2P',cursive;}
+#card-hud.show{display:block;}
+.ch-lbl{font-size:6px;color:#9b30ff;letter-spacing:1px;margin-bottom:6px;}
+.ch-row{display:flex;align-items:center;gap:8px;}
+.ch-img{width:32px;height:32px;border:1px solid #9b30ff;border-radius:4px;
+  object-fit:cover;image-rendering:pixelated;}
+.ch-name{font-size:6px;color:#fff;margin-bottom:2px;line-height:1.4;}
+.ch-pwr{font-size:6px;color:#f5c842;}
+.ch-bon{font-size:6px;color:#00ff88;margin-top:2px;}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+body{overflow:hidden;background:#0a0015;font-family:'Press Start 2P',cursive;}
+canvas{display:block;image-rendering:pixelated;}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;}
+#hud>*{pointer-events:auto;}
+/* status bar */
+#top{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(20,0,40,.95);border:2px solid #7c7cff;border-radius:8px;padding:10px 22px;display:flex;gap:26px;align-items:center;box-shadow:0 0 14px rgba(124,124,255,.4);}
+.sname{font-size:11px;color:#00ffff;text-shadow:0 0 5px #00ffff;}
+.slvl{font-size:8px;color:#7c7cff;margin-top:4px;}
+.stat-wrap{display:flex;flex-direction:column;gap:4px;min-width:130px;}
+.stat-lbl{font-size:7px;color:#7c7cff;}
+.stat-bar{background:#000;border:2px solid #7c7cff;height:13px;position:relative;border-radius:3px;overflow:hidden;}
+.fill{height:100%;transition:width .3s;}
+.fill.hp{background:linear-gradient(90deg,#ff0066,#ff00ff);}
+.fill.sh{background:linear-gradient(90deg,#00ffff,#0099ff);}
+.stat-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff;text-shadow:0 0 3px #000;}
+/* wallet */
+#wallet{position:absolute;top:12px;right:12px;background:rgba(20,0,40,.95);border:2px solid #00ff00;border-radius:8px;padding:14px;min-width:210px;box-shadow:0 0 14px rgba(0,255,0,.4);}
+.wtitle{font-size:10px;color:#00ff00;text-shadow:0 0 5px #00ff00;margin-bottom:10px;text-align:center;border-bottom:1px solid #00ff00;padding-bottom:5px;}
+.wrow{display:flex;justify-content:space-between;margin-bottom:6px;padding:5px;background:rgba(0,255,0,.05);border-radius:3px;}
+.wlbl{font-size:7px;color:#7c7cff;}
+.wval{font-size:9px;color:#00ff00;text-shadow:0 0 4px #00ff00;}
+.wval.pt{color:#ff00ff;text-shadow:0 0 4px #ff00ff;}
+.wbtn{width:100%;background:#00ff00;border:none;border-radius:5px;padding:7px;font-family:'Press Start 2P',cursive;font-size:8px;color:#000;cursor:pointer;margin-top:8px;transition:all .2s;}
+.wbtn:hover{background:#00ffff;transform:scale(1.04);}
+/* combat */
+#combat{position:absolute;top:12px;left:12px;background:rgba(20,0,40,.95);border:2px solid #7c7cff;border-radius:8px;padding:12px;min-width:190px;box-shadow:0 0 14px rgba(124,124,255,.4);}
+.ctitle{font-size:9px;color:#7c7cff;text-shadow:0 0 5px #7c7cff;margin-bottom:8px;text-align:center;}
+.crow{display:flex;justify-content:space-between;margin-bottom:5px;font-size:7px;}
+.clbl{color:#7c7cff;} .cval{color:#00ffff;font-size:8px;}
+.cval.kills{color:#ff0066;font-size:10px;}
+/* hotbar */
+#hotbar{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(20,0,40,.95);border:2px solid #7c7cff;border-radius:10px;padding:10px;display:flex;gap:8px;box-shadow:0 0 14px rgba(124,124,255,.4);}
+.slot{width:56px;height:56px;background:rgba(50,0,100,.8);border:2px solid #7c7cff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;transition:all .2s;position:relative;}
+.slot:hover{transform:translateY(-4px);border-color:#00ffff;}
+.slot.on{border-color:#00ff00;background:rgba(0,255,0,.2);box-shadow:0 0 12px rgba(0,255,0,.5);}
+.skey{position:absolute;top:2px;left:3px;font-size:8px;color:#7c7cff;}
+.sdmg{position:absolute;bottom:2px;right:3px;font-size:7px;color:#ff00ff;}
+/* chat */
+#chat{position:absolute;bottom:96px;left:12px;width:330px;background:rgba(8,8,20,.95);border:2px solid #2a2a4a;border-radius:7px;}
+#chatbox{height:140px;overflow-y:auto;padding:8px;font-size:8px;line-height:1.5;}
+.sys{color:#00ff00;} .plr{color:#00ffff;}
+#chatform{display:flex;border-top:1px solid #2a2a4a;}
+#chatinput{flex:1;background:transparent;border:none;padding:7px;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;}
+#chatinput:focus{outline:none;}
+#chatsend{background:#5656d6;border:none;padding:7px 10px;color:#fff;font-family:'Press Start 2P',cursive;font-size:7px;cursor:pointer;}
+/* minimap */
+#minimap{position:absolute;bottom:96px;right:12px;width:190px;height:190px;background:rgba(8,8,20,.95);border:2px solid #7c7cff;border-radius:7px;overflow:hidden;}
+#mmcanvas{width:100%;height:100%;image-rendering:pixelated;}
+/* kill feed */
+#killfeed{position:absolute;top:110px;right:12px;width:280px;}
+.kn{background:rgba(20,0,40,.95);border:2px solid #00ff00;border-radius:5px;padding:8px;margin-bottom:6px;font-size:8px;color:#fff;animation:sli .3s;box-shadow:0 0 8px rgba(0,255,0,.4);}
+@keyframes sli{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.mn{color:#ff00ff;} .pe{color:#00ff00;}
+/* damage numbers */
+.dmg{position:absolute;font-size:20px;color:#ff0066;text-shadow:0 0 5px #ff0066;animation:fup 1s forwards;pointer-events:none;z-index:20;}
+.dmg.crit{font-size:26px;color:#ffff00;text-shadow:0 0 10px #ffff00;}
+@keyframes fup{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-45px);opacity:0}}
+/* alert */
+.alert{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,0,0,.9);border:3px solid #ff0066;border-radius:8px;padding:18px 36px;font-size:13px;color:#fff;z-index:50;animation:apu .5s 4;box-shadow:0 0 28px rgba(255,0,102,.8);}
+@keyframes apu{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
+/* leaderboard */
+#lb{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);width:580px;max-height:78vh;background:rgba(8,8,20,.98);border:3px solid #7c7cff;border-radius:12px;padding:18px;z-index:30;transition:transform .3s;overflow-y:auto;box-shadow:0 0 28px rgba(124,124,255,.6);}
+#lb.open{transform:translate(-50%,-50%) scale(1);}
+.lhdr{font-size:15px;color:#7c7cff;text-align:center;margin-bottom:18px;text-shadow:0 0 10px #7c7cff;}
+.le{display:flex;justify-content:space-between;padding:9px;margin-bottom:7px;background:rgba(124,124,255,.1);border:1px solid #2a2a4a;border-radius:5px;font-size:8px;}
+.le.g1{border-color:#FFD700;background:rgba(255,215,0,.12);}
+.le.g2{border-color:#C0C0C0;background:rgba(192,192,192,.12);}
+.le.g3{border-color:#CD7F32;background:rgba(205,127,50,.12);}
+.lcls{width:100%;margin-top:12px;padding:9px;background:#5656d6;border:none;border-radius:5px;color:#fff;font-family:'Press Start 2P',cursive;font-size:9px;cursor:pointer;}
+/* loading */
+#loading{position:fixed;inset:0;background:linear-gradient(135deg,#0a0015,#1a0033,#0a0015);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:100;transition:opacity .5s;}
+#loading.hide{opacity:0;pointer-events:none;}
+.llo{font-size:60px;margin-bottom:18px;animation:bob 1s infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.ltitle{font-size:26px;color:#7c7cff;text-shadow:0 0 18px #7c7cff;margin-bottom:8px;}
+.lsub{font-size:11px;color:#00ffff;margin-bottom:28px;}
+.lbarwrap{width:480px;height:22px;background:#1a1a33;border:3px solid #7c7cff;border-radius:12px;overflow:hidden;}
+.lbar{height:100%;background:linear-gradient(90deg,#7c7cff,#00ffff,#ff00ff);background-size:200%;animation:grad 2s linear infinite;transition:width .3s;}
+@keyframes grad{0%{background-position:0%}100%{background-position:200%}}
+.ltxt{margin-top:12px;font-size:10px;color:#7c7cff;}
+
+/* Weapon icons in hotbar */
+.wicon{width:38px;height:38px;image-rendering:pixelated;display:block;filter:drop-shadow(0 0 4px currentColor);}
+.slot.on .wicon{filter:drop-shadow(0 0 8px #00ff00) brightness(1.3);}
+/* Attack flash overlay */
+#atkflash{position:fixed;inset:0;pointer-events:none;z-index:25;opacity:0;transition:opacity .1s;}
+/* Monster hurt shake */
+@keyframes mhurt{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+/* Weapon swing animation */
+@keyframes wswing{0%{transform:rotate(-30deg) scale(1.2)}50%{transform:rotate(20deg) scale(1.4)}100%{transform:rotate(0deg) scale(1)}}
+.slot.swinging .wicon{animation:wswing .25s ease-out;}
+/* Floor HUD */
+#floor-hud{position:fixed;bottom:98px;left:50%;transform:translateX(-50%);background:rgba(20,0,40,.95);border:2px solid #ffe066;border-radius:8px;padding:6px 16px;font-size:9px;color:#ffe066;text-shadow:0 0 8px #ffe066;z-index:15;pointer-events:none;letter-spacing:1px;box-shadow:0 0 16px rgba(255,224,102,.3);}
+/* Transition overlay */
+#trans-overlay{position:fixed;inset:0;background:#000;pointer-events:none;z-index:90;opacity:0;transition:opacity .1s;}
+
+/* ══════════════════════════════════════════
+   MOBILE CONTROLS
+══════════════════════════════════════════ */
+#mobile-ui {
+  display: none;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Joystick — bottom left */
+#joy-zone {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 140px;
+  height: 140px;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#joy-base {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+  border: 2px solid rgba(124,124,255,.35);
+  box-shadow: 0 0 20px rgba(124,124,255,.15);
+}
+#joy-knob {
+  position: absolute;
+  width: 50px; height: 50px;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #8888ff, #3333aa);
+  border: 2px solid rgba(180,180,255,.5);
+  box-shadow: 0 0 14px rgba(100,100,255,.6), inset 0 1px 0 rgba(255,255,255,.2);
+  pointer-events: none;
+  transition: box-shadow .08s;
+}
+#joy-knob.active {
+  box-shadow: 0 0 22px rgba(100,100,255,.9), inset 0 1px 0 rgba(255,255,255,.2);
+}
+
+/* Attack button — bottom right */
+#btn-atk {
+  position: absolute;
+  bottom: 28px;
+  right: 24px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #ff5599, #990033);
+  border: 3px solid rgba(255,80,130,.45);
+  box-shadow: 0 0 22px rgba(255,0,80,.4), inset 0 1px 0 rgba(255,255,255,.15);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform .08s, box-shadow .08s;
+}
+#btn-atk span:first-child { font-size: 24px; line-height:1; }
+#btn-atk span:last-child  { font-family:'Press Start 2P',cursive; font-size:6px; color:rgba(255,200,210,.9); }
+#btn-atk.pressing {
+  transform: scale(.88);
+  box-shadow: 0 0 34px rgba(255,0,80,.85), inset 0 1px 0 rgba(255,255,255,.1);
+}
+
+/* Skill/interact button */
+#btn-skill {
+  position: absolute;
+  bottom: 120px;
+  right: 30px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #55aaff, #003399);
+  border: 2px solid rgba(80,160,255,.4);
+  box-shadow: 0 0 14px rgba(0,100,255,.3), inset 0 1px 0 rgba(255,255,255,.15);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1px;
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform .08s;
+}
+#btn-skill span:first-child { font-size: 18px; line-height:1; }
+#btn-skill span:last-child  { font-family:'Press Start 2P',cursive; font-size:5px; color:rgba(180,220,255,.9); }
+#btn-skill.pressing { transform: scale(.88); }
+
+/* Show only on touch devices */
+@media (pointer: coarse) {
+  #mobile-ui { display: block; }
+  #hotbar { bottom: 175px !important; }
+}
+</style>
+</head>
+<body>
+
+
+<style>
+#charsel{position:fixed;inset:0;z-index:9999;background:#07040f;
+  background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(155,48,255,.2),#07040f 70%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:'Press Start 2P',cursive;overflow-y:auto;padding:20px 0;}
+#charsel .cs-title{font-size:clamp(16px,4vw,30px);color:#f5c842;
+  text-shadow:3px 3px 0 #000,0 0 28px rgba(245,200,66,.5);margin-bottom:6px;}
+#charsel .cs-sub{font-size:clamp(7px,1.5vw,9px);color:#00f5ff;
+  letter-spacing:4px;margin-bottom:32px;text-shadow:0 0 10px #00f5ff;}
+#cs-grid{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
+  margin-bottom:28px;padding:0 16px;max-width:820px;}
+.cs-card{background:#0d0b1a;border:3px solid #1e1b35;border-radius:6px;
+  padding:18px 14px;cursor:pointer;text-align:center;
+  transition:all .2s;width:160px;box-sizing:border-box;}
+.cs-card:hover{transform:translateY(-3px);}
+.cs-card canvas{display:block;margin:0 auto 10px;image-rendering:pixelated;width:64px;height:64px;}
+.cs-cname{font-size:7px;margin-bottom:8px;line-height:1.6;}
+.cs-bar-lbl{text-align:left;font-size:6px;color:#6a6a9a;margin-bottom:3px;}
+.cs-bar-track{background:#000;height:5px;border:1px solid #1e1b35;margin-bottom:8px;}
+.cs-bar-fill{height:100%;}
+#cs-info{font-family:'VT323',monospace;font-size:clamp(15px,3vw,18px);
+  color:#6a6a9a;margin-bottom:20px;text-align:center;
+  min-height:22px;letter-spacing:1px;padding:0 20px;}
+#cs-namerow{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:22px;}
+#cs-namerow label{font-size:7px;color:#6a6a9a;letter-spacing:2px;}
+#cs-nameinput{background:#000;border:2px solid #7c7cff;color:#00f5ff;
+  font-family:'Press Start 2P',cursive;font-size:10px;
+  padding:9px 16px;outline:none;text-align:center;width:220px;letter-spacing:2px;}
+#cs-nameinput:focus{border-color:#00f5ff;}
+#cs-startbtn{background:#f5c842;color:#000;border:none;
+  padding:13px 32px;font-family:'Press Start 2P',cursive;
+  font-size:clamp(8px,2vw,10px);cursor:pointer;
+  box-shadow:4px 4px 0 #000;transition:all .1s;letter-spacing:1px;
+  opacity:.45;pointer-events:none;}
+#cs-startbtn:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 #000;}
+#cs-hint{margin-top:14px;font-size:7px;color:#2a2a4a;letter-spacing:2px;}
+</style>
+
+<div id="charsel" style="display:none!important;">
+  <div class="cs-title">😼 CAT PUNK</div>
+  <div class="cs-sub">SELECT YOUR WARRIOR</div>
+  <div id="cs-grid"></div>
+  <div id="cs-info">Choose a character to begin</div>
+  <div id="cs-namerow">
+    <label>YOUR NAME</label>
+    <input id="cs-nameinput" maxlength="16" placeholder="CAT_PUNK"
+      onkeydown="if(event.key==='Enter')csStart()">
+  </div>
+  <button id="cs-startbtn" onclick="csStart()">▶ ENTER DUNGEON</button>
+  <div id="cs-hint">Pick a class first</div>
+</div>
+
+<div id="atkflash"></div>
+<span id="online-count" style="position:absolute;top:8px;right:12px;font-family:'Press Start 2P',cursive;font-size:7px;color:#00ff88;text-shadow:0 0 6px #00ff88;z-index:50;background:rgba(0,0,0,.6);padding:4px 8px;border-radius:4px;border:1px solid #00ff88;">1 online</span>
+  <div id="floor-hud">🏰 Floor 1</div>
+<div id="trans-overlay"></div>
+<div id="loading">
+  <div class="llo">😼⚔️</div>
+  <div class="ltitle">CAT PUNK</div>
+  <div class="lsub" id="lsub">Loading tileset...</div>
+  <div class="lbarwrap"><div class="lbar" id="lbar" style="width:0%"></div></div>
+  <div class="ltxt" id="ltxt">Starting...</div>
+</div>
+
+<canvas id="gc"></canvas>
+<canvas id="mmcanvas" style="display:none"></canvas>
+
+<div id="hud">
+<div id="mobile-ui">
+
+  <!-- Virtual Joystick -->
+  <div id="joy-zone">
+    <div id="joy-base"></div>
+    <div id="joy-knob"></div>
+  </div>
+
+  <!-- Attack -->
+  <div id="btn-atk"
+    ontouchstart="mbAtkStart(event)"
+    ontouchend="mbAtkEnd(event)"
+    ontouchcancel="mbAtkEnd(event)">
+    <span>⚔️</span><span>ATK</span>
+  </div>
+
+  <!-- Skill/Interact -->
+  <div id="btn-skill"
+    ontouchstart="mbSkill(event)"
+    ontouchend="this.classList.remove('pressing')"
+    ontouchcancel="this.classList.remove('pressing')">
+    <span>✨</span><span>SKL</span>
+  </div>
+
+</div>
+  <div id="top">
+    <div><div class="sname">CAT_PUNK</div><div class="slvl">LVL 1</div></div>
+    <div class="stat-wrap">
+      <div class="stat-lbl">HEALTH</div>
+      <div class="stat-bar"><div class="fill hp" id="hpbar" style="width:100%"></div><div class="stat-txt" id="hptxt">100/100</div></div>
+    </div>
+    <div class="stat-wrap">
+      <div class="stat-lbl">SHIELD</div>
+      <div class="stat-bar"><div class="fill sh" id="shbar" style="width:100%"></div><div class="stat-txt" id="shtxt">50/50</div></div>
+    </div>
+  </div>
+  <div id="wallet">
+    <div class="wtitle">💰 CRYPTO WALLET</div>
+    <div class="wrow"><span class="wlbl">KILL POINTS:</span><span class="wval pt" id="wkp">0</span></div>
+    <div class="wrow"><span class="wlbl">$CATPUNK:</span><span class="wval" id="wtok">0.00</span></div>
+    <button class="wbtn" id="wclaim">CLAIM TOKENS</button>
+  </div>
+
+  <div id="card-hud">
+    <div class="ch-lbl">⚔️ CARD EQUIPPED</div>
+    <div class="ch-row">
+      <img class="ch-img" id="ch-img" src="" alt="">
+      <div>
+        <div class="ch-name" id="ch-name"></div>
+        <div class="ch-pwr"  id="ch-pwr"></div>
+        <div class="ch-bon"  id="ch-bon"></div>
+      </div>
+    </div>
+  </div>
+  <div id="combat">
+    <div class="ctitle">⚔️ COMBAT</div>
+    <div class="crow"><span class="clbl">KILLS:</span><span class="cval kills" id="ckills">0</span></div>
+    <div class="crow"><span class="clbl">DAMAGE:</span><span class="cval" id="cdmg">0</span></div>
+    <div class="crow"><span class="clbl">COMBO:</span><span class="cval" id="ccombo">x0</span></div>
+  </div>
+  <div id="hotbar">
+    <div class="slot on" id="slot0" data-dmg="25"><img class="wicon" id="wi0"><span class="skey">1</span><span class="sdmg">25</span></div>
+    <div class="slot" id="slot1" data-dmg="50"><img class="wicon" id="wi1"><span class="skey">2</span><span class="sdmg">50</span></div>
+    <div class="slot" id="slot2" data-dmg="100"><img class="wicon" id="wi2"><span class="skey">3</span><span class="sdmg">100</span></div>
+    <div class="slot" id="slot3" data-dmg="150"><img class="wicon" id="wi3"><span class="skey">4</span><span class="sdmg">150</span></div>
+    <div class="slot" id="slot4" data-dmg="200"><img class="wicon" id="wi4"><span class="skey">5</span><span class="sdmg">200</span></div>
+    <div class="slot" id="slot5" data-dmg="300"><img class="wicon" id="wi5"><span class="skey">6</span><span class="sdmg">300</span></div>
+    <div class="slot">🏆<span class="skey">L</span></div>
+  </div>
+  <div id="chat">
+    <div id="chatbox"></div>
+    <div id="chatform">
+      <input id="chatinput" placeholder="ENTER to chat…" maxlength="200">
+      <button id="chatsend">SEND</button>
+    </div>
+  </div>
+  <div id="minimap"><canvas id="mmcanvas" width="190" height="190"></canvas></div>
+  <div id="killfeed"></div>
+</div>
+
+<div id="lb">
+  <div class="lhdr">🏆 TOP KILLERS 🏆</div>
+  <div id="lbcontent"></div>
+  <button class="lcls" id="lbclose">CLOSE</button>
+</div>
+
+<script>
+const WEAPON_DATA = [
+  {name: "Sword",           dmg: 25,  type: "melee",  color: "#ff0066", range: 1.5, icon: "assets/weapons/sword.png"},
+  {name: "Bow",             dmg: 50,  type: "short",  color: "#00ff00", range: 4,   icon: "assets/weapons/bow.png"},
+  {name: "Laser Gun",       dmg: 100, type: "long",   color: "#00ffff", range: 7,   icon: "assets/weapons/laser_gun.png"},
+  {name: "Lightning Staff", dmg: 150, type: "aoe",    color: "#ffff00", range: 5,   icon: "assets/weapons/lightning_staff.png"},
+  {name: "Flamethrower",    dmg: 200, type: "cone",   color: "#ff6600", range: 3,   icon: "assets/weapons/flamethrower.png"},
+  {name: "Cryo Blaster",    dmg: 300, type: "freeze", color: "#88aaff", range: 4,   icon: "assets/weapons/cryo_blaster.png"},
+];
+// ── Monster sprite path helper ───────────────────────────────────────────────
+// Server path: assets/monsters/{N}/{N}_enemies_1_{anim}_{000+}.png
+// Load 6 frames per anim for performance
+function _mf(n, anim, count) {
+  const a = [];
+  for (let i = 0; i < count; i++)
+    a.push('assets/monsters/' + n + '/' + n + '_enemies_1_' + anim + '_' + String(i).padStart(3,'0') + '.png');
+  return a;
+}
+
+const MONSTER_NAMES = [
+  {name:"Cyber Bat",    color:"#ff00ff", maxHp:60},
+  {name:"Data Dragon",  color:"#ff4400", maxHp:250},
+  {name:"Death Bot",    color:"#7c7cff", maxHp:350},
+  {name:"Glitch Beast", color:"#ff6600", maxHp:180},
+  {name:"Neon Wolf",    color:"#00ffcc", maxHp:120},
+  {name:"Void Demon",   color:"#cc00ff", maxHp:200},
+  {name:"Iron Golem",   color:"#aaaaaa", maxHp:500},
+  {name:"Shadow Cat",   color:"#ff2266", maxHp:140},
+  {name:"Storm Drake",  color:"#44aaff", maxHp:300},
+  {name:"Cyber Queen",  color:"#ffcc00", maxHp:450},
+];
+
+const MONSTER_SPRITES = MONSTER_NAMES.map((m, i) => ({
+  name:   m.name,
+  color:  m.color,
+  maxHp:  m.maxHp,
+  idle:   _mf(i+1, 'idle',   6),
+  walk:   _mf(i+1, 'walk',   6),
+  attack: _mf(i+1, 'attack', 6),
+  hurt:   _mf(i+1, 'hurt',   4),
+  die:    _mf(i+1, 'die',    8),
+}));
+</script>
+<script>
+// ═══════════════════════════════════════════════════════
+//  VALIDATE map.js
+// ═══════════════════════════════════════════════════════
+if (typeof MAP_DATA==='undefined'||typeof MAP_CONFIG==='undefined') {
+  document.getElementById('lsub').textContent='⚠️ map.js not found!';
+  document.getElementById('ltxt').textContent='Make sure map.js is in the same folder as game.html';
+  throw new Error('map.js missing');
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════════════
+const TILE_PX  = MAP_CONFIG.tileSize || 16;
+let MAP_W    = MAP_CONFIG.width    || 32;
+let MAP_H    = MAP_CONFIG.height   || 32;
+// 32px per tile = classic RPG feel (SNES/GBA scale)
+const TILE_SZ  = 32;
+
+// ═══════════════════════════════════════════════════════
+//  LOADING HELPER
+// ═══════════════════════════════════════════════════════
+function setLoad(pct, txt) {
+  document.getElementById('lbar').style.width = pct + '%';
+  if (txt) document.getElementById('ltxt').textContent = txt;
+  if (pct >= 100) setTimeout(() => {
+    document.getElementById('loading').classList.add('hide');
+    startGame();
+  }, 500);
+}
+setLoad(5, 'Validating map.js...');
+
+// ═══════════════════════════════════════════════════════
+//  CANVAS
+// ═══════════════════════════════════════════════════════
+const gc  = document.getElementById('gc');
+const gctx = gc.getContext('2d');
+gctx.imageSmoothingEnabled = false;
+const mmc  = document.getElementById('mmcanvas');
+const mmctx = mmc.getContext('2d');
+mmctx.imageSmoothingEnabled = false;
+window.addEventListener('resize', () => { gc.width=innerWidth; gc.height=innerHeight; });
+gc.width=innerWidth; gc.height=innerHeight;
+
+// ═══════════════════════════════════════════════════════
+//  TILESET SPRITES
+// ═══════════════════════════════════════════════════════
+const TILE_SPRITES = {
+  // === FLOORS ===
+  0:  {s:'tiles',  sx:0,   sy:0  },  // stone floor main
+  1:  {s:'tiles',  sx:16,  sy:0  },  // stone floor alt
+  2:  {s:'tiles',  sx:32,  sy:0  },  // stone floor dark
+  3:  {s:'walls',  sx:0,   sy:0  },  // solid wall
+  4:  {s:'walls',  sx:16,  sy:0  },  // wall variant
+  // === DOORS ===
+  5:  {s:'doors',  sx:0,   sy:0  },  // door closed top
+  6:  {s:'doors',  sx:0,   sy:16 },  // door closed bottom
+  7:  {s:'doors',  sx:16,  sy:0  },  // door open top
+  // === VOID / SPECIAL ===
+  8:  {s:'tiles',  sx:0,   sy:32 },  // void/black tile
+  // === OBJECTS ===
+  9:  {s:'objects',sx:0,   sy:0  },  // stairs up
+  10: {s:'objects',sx:32,  sy:0  },  // ladder
+  11: {s:'tiles',  sx:48,  sy:0  },  // floor with detail
+  12: {s:'tiles',  sx:64,  sy:0  },  // floor cracked
+  13: {s:'tiles',  sx:80,  sy:0  },  // rubble/debris
+  // === WATER ===
+  14: {s:'water_coast', sx:0, sy:0 }, // water base
+  15: {s:'water_det',   sx:0, sy:0 }, // water detail
+  // === FIRE / TORCH ===
+  16: {s:'fire',   sx:0,   sy:0  },  // torch frame 0
+  17: {s:'fire2',  sx:0,   sy:0  },  // candle frame 0
+  // === TRAPS ===
+  18: {s:'traps',  sx:0,   sy:0  },  // trap idle
+  // === DECORATIVE CRACKS ===
+  19: {s:'cracks_floor', sx:0, sy:0 }, // floor crack
+  20: {s:'cracks_walls', sx:0, sy:0 }, // wall crack
+};
+
+// Merge custom tiles from map.js (if TILE_REGISTRY exists)
+if (typeof TILE_REGISTRY !== 'undefined') {
+  for (const [id, tile] of Object.entries(TILE_REGISTRY)) {
+    TILE_SPRITES[id] = {s: tile.s, sx: tile.c * 16, sy: tile.r * 16};
+  }
+  console.log('✓ Loaded', Object.keys(TILE_REGISTRY).length, 'custom tiles from TILE_REGISTRY');
+}
+
+const TILE_FB = {0:'#2a2a2e',1:'#252528',2:'#1e1e22',3:'#0d0d0f',4:'#111114',
+  5:'#1a1a20',6:'#151518',7:'#222228',8:'#000000',9:'#1a1a1a',
+  10:'#1a1a1a',11:'#2a2a2a',12:'#222222',13:'#1a1515',
+  14:'#0a1a2a',15:'#0a1a2a',16:'#2a1a00',17:'#1a1500',
+  18:'#2a0000',19:'#1a1a1a',20:'#0d0d0d'};
+
+const ts = {};
+const TS_FILES = {
+  'tiles':        'assets/tilesets/tiles.png',
+  'walls':        'assets/tilesets/walls_floor.png',
+  'objects':      'assets/tilesets/Objects.png',
+  'doors':        'assets/tilesets/doors_lever_chest_animation.png',
+  'fire':         'assets/tilesets/fire_animation.png',
+  'fire2':        'assets/tilesets/fire_animation2.png',
+  'traps':        'assets/tilesets/trap_animation.png',
+  'water_coast':  'assets/tilesets/Water_coasts_animation.png',
+  'water_det':    'assets/tilesets/water_details_animation.png',
+  'cracks_coast': 'assets/tilesets/decorative_cracks_coasts_animation.png',
+  'cracks_floor': 'assets/tilesets/decorative_cracks_floor.png',
+  'cracks_walls': 'assets/tilesets/decorative_cracks_walls.png',
+};
+const TS_TOTAL = Object.keys(TS_FILES).length;
+let tsLoaded = 0;
+
+// Animation state for animated tilesets
+const ANIM = {
+  fire:        { frame: 0, frames: 6, cols: 11, interval: 100, last: 0 },
+  fire2:       { frame: 0, frames: 5, cols: 6,  interval: 120, last: 0 },
+  doors:       { frame: 0, frames: 4, cols: 5,  interval: 0,   last: 0 }, // manual open/close
+  traps:       { frame: 0, frames: 4, cols: 4,  interval: 200, last: 0 },
+  water_coast: { frame: 0, frames: 8, cols: 29, interval: 150, last: 0 },
+  water_det:   { frame: 0, frames: 6, cols: 37, interval: 180, last: 0 },
+  cracks_coast:{ frame: 0, frames: 5, cols: 19, interval: 250, last: 0 },
+};
+
+function updateAnims(now) {
+  for (const [key, a] of Object.entries(ANIM)) {
+    if (a.interval > 0 && now - a.last > a.interval) {
+      a.frame = (a.frame + 1) % a.frames;
+      a.last = now;
+    }
+  }
+}
+
+// Get animated sprite sx for a tileset
+// [FIX Bug #4] was: a.frame * (a.cols > 0 ? 0 : 16) — always 0 since cols > 0 always.
+// Fix: frame offset = frame index * tile source size (16px)
+function animSX(tsKey, baseSX) {
+  const a = ANIM[tsKey];
+  if (!a) return baseSX;
+  return baseSX + a.frame * 16;
+}
+
+for (const [name, path] of Object.entries(TS_FILES)) {
+  const img = new Image();
+  img.onload = () => {
+    ts[name] = img;
+    tsLoaded++;
+    setLoad(10 + tsLoaded/TS_TOTAL*35, `Tileset ${tsLoaded}/${TS_TOTAL}...`);
+    if (tsLoaded === TS_TOTAL) loadPlayer();
+  };
+  img.onerror = () => {
+    console.warn(`Failed to load tileset: ${path}`);
+    tsLoaded++;
+    setLoad(10 + tsLoaded/TS_TOTAL*35, `Tileset ${tsLoaded}/${TS_TOTAL}...`);
+    if (tsLoaded === TS_TOTAL) loadPlayer();
+  };
+  img.src = path;
+}
+
+function drawTile(id, sx, sy) {
+  const def = TILE_SPRITES[id];
+  if (!def || !ts[def.s]) {
+    // Fallback colour — for dungeon tiles use a neutral dark floor colour
+    gctx.fillStyle = id >= 10000 ? '#1a1a2e' : (TILE_FB[id] || '#111');
+    gctx.fillRect(sx, sy, TILE_SZ, TILE_SZ);
+    return;
+  }
+  const img = ts[def.s];
+  // Source tile size: dungeonTileMap entries carry sw/sh; default 16px
+  const srcW = def.sw || 16;
+  const srcH = def.sh || 16;
+
+  // Animated tilesets: offset srcX by frame column
+  const a = ANIM[def.s];
+  let srcX = def.sx;
+  let srcY = def.sy;
+  if (a && a.interval > 0) {
+    const imgW = img.naturalWidth || img.width;
+    const colsPerFrame = Math.floor(imgW / srcW / a.frames);
+    srcX = def.sx + a.frame * colsPerFrame * srcW;
+    if (srcX + srcW > imgW) srcX = def.sx;
+  }
+  gctx.drawImage(img, srcX, srcY, srcW, srcH, sx, sy, TILE_SZ, TILE_SZ);
+}
+
+// ═══════════════════════════════════════════════════════
+//  PLAYER SPRITE - Multi-folder directional animation
+//  Folders: south / north / west / east
+//  Each folder: frame_000.png through frame_003.png (56×56px)
+// ═══════════════════════════════════════════════════════
+const FRAME_W = 56, FRAME_H = 56;
+const NUM_FRAMES = 4;
+
+// Map pDir values to folder names
+// pDir: 0=south, 1=west, 2=east, 3=north
+const DIR_FOLDER = { 0:'south', 1:'west', 2:'east', 3:'north' };
+
+// playerFrames[dir][frameIndex] = Image
+const playerFrames = { 0:[], 1:[], 2:[], 3:[] };
+let playerLoaded = false;
+
+function loadPlayer() {
+  setLoad(48, 'Loading player sprite...');
+  const basePath = 'assets/player/cat-punk-warrior/';
+  let toLoad = 0, loaded = 0, failed = 0;
+
+  for (let dir = 0; dir < 4; dir++) toLoad += NUM_FRAMES;
+
+  function onDone() {
+    loaded++;
+    if (loaded + failed >= toLoad) {
+      playerLoaded = true;
+      setLoad(70, 'Building map...');
+      initMap(); // guard inside prevents double-run
+    }
+  }
+  function onFail() {
+    failed++;
+    if (loaded + failed >= toLoad) {
+      playerLoaded = (loaded > 0);
+      setLoad(70, 'Building map...');
+      initMap(); // guard inside prevents double-run
+    }
+  }
+
+  for (let dir = 0; dir < 4; dir++) {
+    const folder = DIR_FOLDER[dir];
+    for (let f = 0; f < NUM_FRAMES; f++) {
+      const img = new Image();
+      const frameNum = String(f).padStart(3, '0');
+      img.onload = onDone;
+      img.onerror = onFail;
+      img.src = basePath + folder + '/frame_' + frameNum + '.png';
+      playerFrames[dir][f] = img;
+    }
+  }
+}
+
+function drawPlayer(screenX, screenY, dir, frame) {
+  // Player sprite: 1.5x tile wide, 2x tile tall — classic RPG proportions
+  const DRAW_W = TILE_SZ * 1.5;
+  const DRAW_H = TILE_SZ * 2.0;
+  // Center horizontally on tile, feet align with bottom of tile
+  const destX  = screenX + TILE_SZ/2 - DRAW_W/2;
+  const destY  = screenY + TILE_SZ   - DRAW_H;
+
+  const frameImg = playerFrames[dir] && playerFrames[dir][frame % NUM_FRAMES];
+  if (frameImg && frameImg.complete && frameImg.naturalWidth > 0) {
+    gctx.drawImage(frameImg, destX, destY, DRAW_W, DRAW_H);
+  } else {
+    gctx.fillStyle = '#00ffff';
+    gctx.fillRect(screenX + TILE_SZ*0.2, screenY + TILE_SZ*0.1, TILE_SZ*0.6, TILE_SZ*0.8);
+  }
+}
+// ═══════════════════════════════════════════════════════
+//  MAP + SMOOTH MOVEMENT STATE
+// ═══════════════════════════════════════════════════════
+let gameMap = [];
+
+// Camera in tile units (float, clamped each frame)
+let cam = {x: 0, y: 0};
+
+// Player tile position (integer grid)
+let pTile = {x: MAP_CONFIG.startX || 7, y: MAP_CONFIG.startY || 5};
+// Player pixel position (smooth interpolation target)
+let pPx   = {x: (MAP_CONFIG.startX || 7) * TILE_SZ, y: (MAP_CONFIG.startY || 5) * TILE_SZ};
+// For backward compat, pPos still used by monster logic
+let pPos  = pTile;
+
+let pDir = 2, pMoving = false, pFrame = 0, pFrameTimer = 0;
+
+// Smooth movement: player moves at PLAYER_SPEED px per frame toward target
+const PLAYER_SPEED = 3;   // px per frame (at 60fps = ~180px/s = ~5.6 tiles/s)
+const FRAME_SPEED  = 6;   // animation ticks per frame
+
+let _mapInitialized = false;
+
+// ═══ MULTI-LEVEL DUNGEON MAP SYSTEM ═══════════════════════════════════════════
+let dungeon     = null;  // DungeonMap instance (from map-system.js)
+let stairMgr    = null;  // StairManager instance
+let stairCooldown = 0;   // Prevent spam trigger
+let _dungeonLoaded = false;
+
+// ── Draw all remote players ───────────────────────────────────────────────────
+function drawOtherPlayers(camX, camY) {
+  for (const [id, rp] of Object.entries(remotePlayers)) {
+    if (!rp || id === myId) continue;
+
+    // Smooth interpolation toward server position
+    const tpx = rp.x * TILE_SZ;
+    const tpy = rp.y * TILE_SZ;
+    if (rp.px === undefined) { rp.px = tpx; rp.py = tpy; }
+    rp.px += (tpx - rp.px) * 0.25;
+    rp.py += (tpy - rp.py) * 0.25;
+
+    const sx = Math.round(rp.px - camX);
+    const sy = Math.round(rp.py - camY);
+
+    // Off-screen culling
+    if (sx < -64 || sx > gc.width + 64 || sy < -96 || sy > gc.height + 32) continue;
+
+
+
+    // Sprite (reuse local player frames, dir=2 default if unknown)
+    const dir = rp.dir ?? 2;
+    const frame = rp.frame ?? 0;
+    const DRAW_W = TILE_SZ * 1.5;
+    const DRAW_H = TILE_SZ * 2.0;
+    const destX  = sx + TILE_SZ/2 - DRAW_W/2;
+    const destY  = sy + TILE_SZ   - DRAW_H;
+    const frameImg = playerFrames[dir] && playerFrames[dir][frame % NUM_FRAMES];
+    if (frameImg) {
+      gctx.drawImage(frameImg, destX, destY, DRAW_W, DRAW_H);
+    } else {
+      gctx.fillStyle = '#ff44aa';
+      gctx.fillRect(sx + TILE_SZ*.2, sy + TILE_SZ*.1, TILE_SZ*.6, TILE_SZ*.8);
+    }
+
+    const headY = sy - TILE_SZ;
+    const barW  = TILE_SZ * 1.4;
+    const barX  = sx + TILE_SZ/2 - barW/2;
+
+    // Name tag
+    gctx.font = '5px "Press Start 2P"';
+    gctx.textAlign = 'center';
+    // Class-based name color
+    const CLASS_COLORS = { warrior:'#f5c842', mage:'#9b30ff', rogue:'#00f5ff', tank:'#39ff14' };
+    const nameColor = CLASS_COLORS[rp.charId] || '#ffaa00';
+    gctx.fillStyle = nameColor;
+    
+    gctx.fillText((rp.username || 'Player').slice(0,12), sx + TILE_SZ/2, headY - 12);
+    gctx.shadowBlur = 0;
+
+    // HP bar
+    const hpRatio = rp.maxHp > 0 ? (rp.hp / rp.maxHp) : 1;
+    gctx.fillStyle = 'rgba(0,0,0,.7)';
+    gctx.fillRect(barX, headY - 8, barW, 4);
+    gctx.fillStyle = hpRatio > 0.5 ? '#00ff66' : hpRatio > 0.25 ? '#ffaa00' : '#ff2244';
+    gctx.fillRect(barX + 1, headY - 7, Math.max(0, (barW - 2) * hpRatio), 2);
+
+    // Level badge
+    gctx.fillStyle = '#ffe066';
+    gctx.font = '4px "Press Start 2P"';
+    gctx.textAlign = 'left';
+    gctx.fillText('Lv' + (rp.level||1), barX, headY - 10);
+  }
+  gctx.textAlign = 'left';
+}
+
+
+function initDungeonSystem() {
+  // Initialize only if map-system.js is loaded
+  if (typeof DungeonMap === 'undefined') {
+    console.warn('[DungeonSys] map-system.js not loaded — single floor mode');
+    return;
+  }
+  dungeon  = new DungeonMap();
+  stairMgr = new StairManager(dungeon);
+  console.log('[DungeonSys] Ready');
+}
+
+function loadDungeonData(data) {
+  if (!dungeon) return;
+  dungeon._parse(data);
+  // [FIX] DungeonMap has no loadTilesets() — use injectImages() instead.
+  // If tilesets are embedded as base64 in the JSON, load them via Image() and inject.
+  if (data.dungeonTilesets) {
+    const tSz = data.tileSize || 32;
+    for (const [name, src] of Object.entries(data.dungeonTilesets)) {
+      if (!src) continue;
+      const url = src.length > 200 ? 'data:image/png;base64,' + src : src;
+      const img = new Image();
+      img.onload = () => {
+        ts[name] = img;
+        const cols = Math.floor(img.naturalWidth / tSz);
+        for (const [idStr, def] of Object.entries(TILE_SPRITES)) {
+          if (def.s !== name) continue;
+          const rawIdx = parseInt(idStr) % 10000;
+          def.sx = (rawIdx % cols) * tSz;
+          def.sy = Math.floor(rawIdx / cols) * tSz;
+          def.sw = tSz; def.sh = tSz;
+        }
+        dungeon.injectImages({ [name]: img });
+        window._dungeonTS = ts;
+      };
+      img.src = url;
+    }
+  }
+  _dungeonLoaded = dungeon.floors.length > 0;
+  if (_dungeonLoaded) {
+    setTimeout(() => { monsters.length = 0; for(let i=0;i<3;i++) spawnMonster(); }, 600);
+    console.log('[Dungeon] Loaded', dungeon.floors.length, 'floor(s)');
+    updateFloorHUD();
+  }
+}
+
+function updateFloorHUD() {
+  if (!dungeon) return;
+  const el = document.getElementById('floor-hud');
+  if (!el) return;
+  const fl = dungeon.current;
+  el.textContent = '🏰 ' + (fl ? fl.name : 'Floor 1');
+}
+
+function checkStairs() {
+  if (!dungeon || !stairMgr || Date.now() < stairCooldown) return;
+  const stair = stairMgr.check(pPx.x + TILE_SZ/2, pPx.y + TILE_SZ/2);
+  if (!stair) return;
+  stairMgr.traverse(stair, (newPx, newPy, newFloor) => {
+    pPx.x = newPx - TILE_SZ/2;
+    pPx.y = newPy - TILE_SZ/2;
+    pTile.x = Math.floor(newPx / TILE_SZ);
+    pTile.y = Math.floor(newPy / TILE_SZ);
+    pPos.x = pTile.x; pPos.y = pTile.y;
+    updateFloorHUD();
+    console.log('[Dungeon] Now on floor', newFloor + 1);
+  });
+  stairCooldown = Date.now() + 2000;
+}
+
+function drawDungeonMap(camX, camY) {
+  if (!dungeon || !_dungeonLoaded) return;
+  // [FIX] dungeon._tileMap doesn't exist on DungeonMap — it uses dungeon._imgs (tileset images).
+  // Just inject the already-loaded ts{} images so map-system.js can draw tiles.
+  dungeon.injectImages(ts);
+  // Also expose ts globally so map-system.js can re-inject on each frame
+  window._dungeonTS = ts;
+  dungeon.render(gctx, camX, camY, gc.width, gc.height, performance.now());
+  // Transition fade overlay
+  if (dungeon._transition) {
+    const alpha = Math.sin(dungeon._transition.progress * Math.PI) * 0.85;
+    const overlay = document.getElementById('trans-overlay');
+    if(overlay) overlay.style.opacity = alpha;
+  } else {
+    const overlay = document.getElementById('trans-overlay');
+    if(overlay) overlay.style.opacity = 0;
+  }
+}
+function initMap() {
+  // Guard: only run once (loadPlayer may trigger this from both onDone and onFail)
+  if (_mapInitialized) return;
+  _mapInitialized = true;
+  initDungeonSystem();
+
+  // [FIX] Immediately seed gameMap from static MAP_DATA so monsters can spawn
+  // right away — async JSON fetch may take 3-5 seconds or fail entirely
+  if (!gameMap.length && typeof MAP_DATA !== 'undefined') {
+    gameMap = MAP_DATA.map(r => [...r]);
+    pTile.x = MAP_CONFIG.startX || 8;
+    pTile.y = MAP_CONFIG.startY || 8;
+    pPos.x  = pTile.x; pPos.y = pTile.y;
+    pPx.x   = pTile.x * TILE_SZ;
+    pPx.y   = pTile.y * TILE_SZ;
+    console.log('[Map] gameMap seeded from MAP_DATA immediately (' + MAP_DATA.length + ' rows)');
+  }
+
+  // Check if map-editor sent a new map via localStorage
+  try {
+    const pending = localStorage.getItem('catpunk_pending_map');
+    if (pending) {
+      const pd = JSON.parse(pending);
+      localStorage.removeItem('catpunk_pending_map');
+      gameMap = pd.mapData.map(r => [...r]);
+      MAP_CONFIG.width  = pd.width;
+      MAP_CONFIG.height = pd.height;
+      MAP_W = pd.width; MAP_H = pd.height;
+      MAP_CONFIG.startX = pd.startX;
+      MAP_CONFIG.startY = pd.startY;
+      MAP_CONFIG.name   = pd.name;
+      pTile.x = pd.startX; pTile.y = pd.startY;
+      pPos.x  = pd.startX; pPos.y  = pd.startY;
+      pPx.x   = pd.startX * TILE_SZ; pPx.y = pd.startY * TILE_SZ;
+
+      // Load custom tile registry from map editor
+      if (pd.tileRegistry && pd.tileRegistry.length) {
+        pd.tileRegistry.forEach(td => {
+          if (!TILE_SPRITES[td.id]) {
+            TILE_SPRITES[td.id] = {s: td.s, sx: td.c * TILE_PX, sy: td.r * TILE_PX};
+          }
+        });
+        console.log('[Map] Loaded', pd.tileRegistry.length, 'custom tiles from registry');
+      }
+
+      // Load dungeon tilesets + tileMap if present
+      if (pd.dungeonTileMap) {
+        for (const [id, def] of Object.entries(pd.dungeonTileMap)) {
+          TILE_SPRITES[+id] = def;
+        }
+      }
+      if (pd.dungeonTilesets) {
+        // tilesetsInfo: { name: srcSizeInPx } — sent from map-editor Apply
+        const tilesetsInfo = pd.tilesetsInfo || {};
+        Object.entries(pd.dungeonTilesets).forEach(([name, b64]) => {
+          if (!b64) return;
+          // Per-tileset source size — tf_jungle=32, downtown=16
+          const srcSz = tilesetsInfo[name] || pd.tileSize || 32;
+          TS_SIZES[name] = srcSz; // register for ensureTileset
+          if (!ts[name]) {
+            const img = new Image();
+            const mime = b64.startsWith('iVBOR') ? 'image/png' : 'image/jpeg';
+            img.onload = (function(sz) { return function() {
+              ts[name] = img;
+              const cols = Math.floor(img.naturalWidth / sz);
+              for (const [idStr, def] of Object.entries(TILE_SPRITES)) {
+                if (def.s !== name) continue;
+                const rawIdx = parseInt(idStr) % 10000;
+                def.sx = (rawIdx % cols) * sz;
+                def.sy = Math.floor(rawIdx / cols) * sz;
+                def.sw = sz; def.sh = sz;
+              }
+              if (dungeon) dungeon.injectImages({ [name]: img });
+              window._dungeonTS = ts;
+              console.log('[Map] Tileset loaded from editor:', name, img.naturalWidth + 'x' + img.naturalHeight, sz + 'px =', cols, 'cols');
+            }; })(srcSz);
+            img.src = 'data:' + mime + ';base64,' + b64;
+          }
+        });
+        console.log('[Map] Loaded dungeon tilesets from editor:', Object.keys(pd.dungeonTilesets));
+      }
+
+
+      // [FIX Bug L] Activate dungeon multi-layer system if payload has floors[]
+      // Without this, objects layer was NEVER rendered — only flat mapData (ground only)
+      if (pd.floors && pd.floors.length > 0 && dungeon) {
+        loadDungeonData(pd);
+      }
+
+      console.log('[Map] Loaded from Map Editor: ' + pd.name);
+      chat('sys', '🗺️ Map loaded from editor: ' + pd.name);
+      setLoad(90, 'Almost ready...');
+      setTimeout(() => setLoad(100), 300);
+      return;
+    }
+  } catch(e) { console.warn('[Map] localStorage error:', e); }
+
+  // ── Helper: apply a fully-resolved mapData payload ──────────────────────────
+  function applyMapPayload(pd) {
+    gameMap = pd.mapData.map(r => [...r]);
+    MAP_CONFIG.width  = pd.width  || MAP_CONFIG.width;
+    MAP_CONFIG.height = pd.height || MAP_CONFIG.height;
+    MAP_W = MAP_CONFIG.width; MAP_H = MAP_CONFIG.height;
+    MAP_CONFIG.startX = pd.startX != null ? pd.startX : MAP_CONFIG.startX;
+    MAP_CONFIG.startY = pd.startY != null ? pd.startY : MAP_CONFIG.startY;
+    MAP_CONFIG.name   = pd.name   || MAP_CONFIG.name;
+    pTile.x = MAP_CONFIG.startX; pTile.y = MAP_CONFIG.startY;
+    pPos.x  = MAP_CONFIG.startX; pPos.y  = MAP_CONFIG.startY;
+    pPx.x   = MAP_CONFIG.startX * TILE_SZ; pPx.y = MAP_CONFIG.startY * TILE_SZ;
+
+    // Apply dungeon tilemap if present (maps tile IDs to sprite coords)
+    if (pd.dungeonTileMap) {
+      for (const [id, def] of Object.entries(pd.dungeonTileMap)) {
+        TILE_SPRITES[+id] = def;
+      }
+    }
+    // Load dungeon tileset images if embedded as base64
+    if (pd.dungeonTilesets) {
+      const tSz = pd.tileSize || 32;
+      for (const [name, b64] of Object.entries(pd.dungeonTilesets)) {
+        if (ts[name] || !b64) continue;
+        const img = new Image();
+        img.onload = () => {
+          ts[name] = img;
+          const cols = Math.floor(img.naturalWidth / tSz);
+          for (const [idStr, def] of Object.entries(TILE_SPRITES)) {
+            if (def.s !== name) continue;
+            const rawIdx = parseInt(idStr) % 10000;
+            def.sx = (rawIdx % cols) * tSz;
+            def.sy = Math.floor(rawIdx / cols) * tSz;
+            def.sw = tSz; def.sh = tSz;
+          }
+          if (dungeon) dungeon.injectImages({ [name]: img });
+          window._dungeonTS = ts;
+        };
+        const mime = b64.startsWith('iVBOR') ? 'image/png' : 'image/jpeg';
+        img.src = 'data:' + mime + ';base64,' + b64;
+      }
+    }
+    // Feed dungeon system if available
+    if (dungeon && (pd.dungeonData || pd.floors || pd.levels)) {
+      loadDungeonData(pd);
+    }
+    setLoad(90, 'Almost ready...');
+    setTimeout(() => setLoad(100), 300);
+  }
+
+  // ── Helper: auto-load a tileset image by name if not yet in ts{} ────────────
+  // After load, recompute sx/sy for TILE_SPRITES entries using this tileset
+  function ensureTileset(name, tileSize) {
+    if (ts[name]) return;
+    const img = new Image();
+    img.onload = () => {
+      ts[name] = img;
+      const sz = tileSize || 32;
+      const cols = Math.floor(img.naturalWidth / sz);
+      // Recompute ALL TILE_SPRITES for this tileset (incl. dungeon IDs >= 10000)
+      for (const [idStr, def] of Object.entries(TILE_SPRITES)) {
+        if (def.s !== name) continue;
+        const rawIdx = parseInt(idStr) % 10000; // strip (tsIdx+1)*10000 prefix
+        def.sx = (rawIdx % cols) * sz;
+        def.sy = Math.floor(rawIdx / cols) * sz;
+        def.sw = sz; def.sh = sz;
+      }
+      // Also inject into dungeon system so map-system.js can draw immediately
+      if (dungeon) dungeon.injectImages({ [name]: img });
+      window._dungeonTS = ts;
+      console.log('[Tileset] Loaded:', name, img.naturalWidth + 'x' + img.naturalHeight, cols + ' cols');
+    };
+    img.onerror = () => { console.warn('[Tileset] Not found: assets/tilesets/' + name + '.png'); };
+    img.src = 'assets/tilesets/' + name + '.png';
+  }
+
+  // ── Helper: convert raw dungeon JSON to mapData payload ────────────────────
+  // [FIX] Handles BOTH v2 format (data.floors[]) AND legacy (data.levels[])
+  function parseDungeonJSON(data) {
+    const tileSize = data.tileSize || 32;
+    const w = data.width  || 32;
+    const h = data.height || 32;
+
+    // [FIX] Detect v2 format: has data.floors array
+    let level0 = {};
+    if (Array.isArray(data.floors) && data.floors.length > 0) {
+      // v2: merge ground + objects layer of floor 0
+      const f0 = data.floors[0];
+      level0 = Object.assign({}, f0.ground || {}, f0.objects || {});
+    } else {
+      // Legacy: data.dungeonData.levels[] or data.levels[]
+      const levels = (data.dungeonData && data.dungeonData.levels) || data.levels || [];
+      level0 = levels[0] || {};
+    }
+
+    // Collect used tilesets + pre-load images
+    const tsIdx = {};
+    const usedTilesets = [];
+    Object.values(level0).forEach(t => {
+      // [FIX] Skip entries without valid tileset name — prevents "undefined.png"
+      if (!t || !t.tileset || typeof t.tileset !== 'string') return;
+      if (!tsIdx.hasOwnProperty(t.tileset)) {
+        tsIdx[t.tileset] = usedTilesets.length;
+        usedTilesets.push(t.tileset);
+        ensureTileset(t.tileset, tileSize);
+      }
+    });
+
+    // Build 2D mapData — encoding: (tsIdx+1)*10000 + tile.idx
+    const mapData = Array.from({length: h}, (_, y) =>
+      Array.from({length: w}, (_, x) => {
+        const t = level0[x + ',' + y];
+        if (!t || !t.tileset) return 0;
+        const ti = tsIdx[t.tileset];
+        if (ti === undefined) return 0;
+        return (ti + 1) * 10000 + t.idx;
+      })
+    );
+
+    // Build tileMap for TILE_SPRITES: id -> {s, sx, sy, sw, sh}
+    // [FIX] cols must be computed AFTER image loads. We build with best-guess now,
+    // then ensureTileset's onload will recompute via the loop in ensureTileset().
+    const dungeonTileMap = {};
+    Object.values(level0).forEach(t => {
+      if (!t || !t.tileset) return;
+      const ti = tsIdx[t.tileset];
+      if (ti === undefined) return;
+      const id = (ti + 1) * 10000 + t.idx;
+      if (!dungeonTileMap[id]) {
+        // Use loaded image if available, else use actual tileset width heuristic
+        const img  = ts[t.tileset];
+        // tf_jungle is 704px wide at 32px/tile = 22 cols; generic fallback = 16 cols
+        const fallbackCols = (t.tileset === 'tf_jungle') ? 22 : Math.floor(512 / tileSize);
+        const cols = img ? Math.floor(img.naturalWidth / tileSize) : fallbackCols;
+        dungeonTileMap[id] = {
+          s:  t.tileset,
+          sx: (t.idx % cols) * tileSize,
+          sy: Math.floor(t.idx / cols) * tileSize,
+          sw: tileSize,
+          sh: tileSize
+        };
+      }
+    });
+
+    // Feed dungeon multi-floor system
+    if (dungeon) loadDungeonData(data);
+
+    // [FIX] v2 format: use floor 0's name
+    const floorName = (Array.isArray(data.floors) && data.floors[0]?.name)
+                      || data.name || 'Dungeon';
+
+    return {
+      name: floorName,
+      width: w, height: h,
+      startX: data.startX != null ? data.startX : Math.floor(w / 2),
+      startY: data.startY != null ? data.startY : Math.floor(h / 2),
+      mapData,
+      dungeonTileMap,
+      dungeonTilesets: null
+    };
+  }
+
+  // ── Fallback: use static MAP_DATA from map.js ─────────────────────────────
+  function useStaticMap() {
+    gameMap = MAP_DATA.map(r => [...r]);
+    pTile.x = MAP_CONFIG.startX; pTile.y = MAP_CONFIG.startY;
+    pPos.x  = MAP_CONFIG.startX; pPos.y  = MAP_CONFIG.startY;
+    pPx.x   = MAP_CONFIG.startX * TILE_SZ; pPx.y = MAP_CONFIG.startY * TILE_SZ;
+    console.log('[Map] Using static MAP_DATA from map.js');
+    setLoad(90, 'Almost ready...');
+    setTimeout(() => setLoad(100), 300);
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  // [FIX] fetchWithTimeout: cancel request if server does not respond within X ms
+  // Tanpa ini, fetch('/api/current-map-name') bisa nunggu 30-60 detik → loading forever
+  function fetchWithTimeout(url, ms) {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { signal: ctrl.signal })
+      .finally(() => clearTimeout(tid));
+  }
+
+  function _loadFromPath(jsonPath) {
+    return fetchWithTimeout(jsonPath, 5000)
+      .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
+      .then(data => {
+        if (data && (data.floors || data.dungeonData || data.levels)) {
+          const pd = parseDungeonJSON(data);
+          applyMapPayload(pd);
+          console.log('[Map] Loaded dungeon JSON: ' + jsonPath);
+          chat('sys', '🗺️ Dungeon loaded: ' + pd.name);
+        } else if (data && data.mapData && data.mapData.length > 0) {
+          applyMapPayload(data);
+          console.log('[Map] Loaded map JSON: ' + jsonPath);
+        } else {
+          throw new Error('unrecognised format');
+        }
+      });
+  }
+
+  // [FIX] Entire chain wrapped in async/await so fallback order is clear
+  // dan useStaticMap() PASTI terpanggil kalau semua gagal
+  (async () => {
+    // Step 1: ask server which map was last applied (timeout 1.5s)
+    let resolvedPath = null;
+    try {
+      const r = await fetchWithTimeout('/api/current-map-name', 1500);
+      if (r.ok) {
+        const info = await r.json();
+        if (info && info.path) resolvedPath = info.path;
+      }
+    } catch(e) { /* server unavailable / timeout */ }
+
+    // Step 2: coba load dari path server, atau fallback ke MAP_CONFIG.name
+    const pathsToTry = [
+      resolvedPath,
+      'assets/maps/' + MAP_CONFIG.name + '.json',
+    ].filter(Boolean).filter((v,i,a) => a.indexOf(v) === i); // deduplicate
+
+    for (const p of pathsToTry) {
+      try {
+        await _loadFromPath(p);
+        return; // berhasil, selesai
+      } catch(e) {
+        console.log('[Map] Failed to load:', p, '—', e.message);
+      }
+    }
+
+    // Step 3: coba /api/map (server endpoint)
+    try {
+      const r  = await fetchWithTimeout('/api/map', 2000);
+      const pd = await r.json();
+      if (pd && pd.mapData && pd.mapData.length > 0) {
+        applyMapPayload(pd);
+        console.log('[Map] Loaded from /api/map');
+        return;
+      }
+    } catch(e) { /* server unavailable */ }
+
+    // Step 4: selalu berhasil — pakai static MAP_DATA dari map.js
+    console.log('[Map] All remote sources failed, using static MAP_DATA');
+    useStaticMap();
+  })();
+}
+
+function walkable(t) {
+  // map.js: 0=floor(walkable), 3=water, 4=wall, 8=void, 9=obstacle
+  // Walkable: floor, path variants, open door
+  if(t===0||t===1||t===2||t===7||t===11||t===12||t===13) return true;
+  // [FIX] Dungeon JSON tiles have IDs >= 100
+  if(t >= 100) return true;
+  return false;
+}
+
+// Solid check: bounds + explicit solidTiles + objects layer + void (no ground)
+function isSolidDungeonTile(tx, ty) {
+  const mW = MAP_CONFIG.width  || MAP_W;
+  const mH = MAP_CONFIG.height || MAP_H;
+  if (tx < 0 || ty < 0 || tx >= mW || ty >= mH) return true; // out of bounds
+  if (!dungeon || !dungeon.current) return false;
+  const floor = dungeon.current;
+  const key   = tx + ',' + ty;
+  if (floor.solidTiles  && floor.solidTiles[key])  return true; // explicit wall
+  if (floor.objects     && floor.objects[key])     return true; // object on tile
+  if (floor.ground      && !floor.ground[key])     return true; // void/no floor
+  return false;
+}
+
+// ═══════════════════════════════════════════════════════
+//  MONSTER STATE - declared early to avoid TDZ in render()
+// ═══════════════════════════════════════════════════════
+let monsters = [];
+
+// ─── Multiplayer State ────────────────────────────────────────────────────────
+let socket = null;
+let myId   = null;
+let myName = 'Player_???';
+let remotePlayers = {};   // id -> { x, y, px, py, dir, frame, hp, maxHp, username, level }
+let serverMonsters = {};  // id -> { x, y, hp, maxHp, type } from server
+let useServerMonsters = false; // switch to server monsters when multiplayer active
+let pvpEnabled = true;
+let lastSentX = -1, lastSentY = -1; // for delta compression
+let monsterIdCtr = 0;
+
+// ═══════════════════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════════════════
+function render() {
+  gctx.fillStyle = '#0a0015';
+  gctx.fillRect(0, 0, gc.width, gc.height);
+  if (!gameMap.length) { requestAnimationFrame(render); return; }
+
+  // ── Smooth player pixel movement ──────────────────────────────────────────
+  const targetPx = pTile.x * TILE_SZ;
+  const targetPy = pTile.y * TILE_SZ;
+  const dxPx = targetPx - pPx.x;
+  const dyPx = targetPy - pPx.y;
+  const distPx = Math.sqrt(dxPx*dxPx + dyPx*dyPx);
+  if (distPx > 0.5) {
+    const step = Math.min(PLAYER_SPEED, distPx);
+    pPx.x += (dxPx / distPx) * step;
+    pPx.y += (dyPx / distPx) * step;
+    pMoving = true;
+  } else {
+    pPx.x = targetPx;
+    pPx.y = targetPy;
+    pMoving = false;
+  }
+
+  // ── Smooth camera: center on pixel pos, locked to map edges ──────────────
+  const camPxX = pPx.x + TILE_SZ/2 - gc.width/2;
+  const camPxY = pPx.y + TILE_SZ/2 - gc.height/2;
+  const maxCamX = MAP_W * TILE_SZ - gc.width;
+  const maxCamY = MAP_H * TILE_SZ - gc.height;
+  const camX = Math.max(0, Math.min(maxCamX, camPxX));
+  const camY = Math.max(0, Math.min(maxCamY, camPxY));
+
+  // Store tile-space cam for monster logic
+  cam.x = camX / TILE_SZ;
+  cam.y = camY / TILE_SZ;
+  // [FIX] Expose camX/camY globally for attack effect system
+  window._camX = camX;
+  window._camY = camY;
+
+  // ── Draw tiles ────────────────────────────────────────────────────────────
+  const x0 = Math.max(0, Math.floor(camX / TILE_SZ));
+  const x1 = Math.min(MAP_W, Math.ceil((camX + gc.width)  / TILE_SZ) + 1);
+  const y0 = Math.max(0, Math.floor(camY / TILE_SZ));
+  const y1 = Math.min(MAP_H, Math.ceil((camY + gc.height) / TILE_SZ) + 1);
+
+  // Use dungeon system if loaded, otherwise fall back to flat gameMap
+  if (_dungeonLoaded && dungeon) {
+    drawDungeonMap(camX, camY);
+    checkStairs();
+  } else {
+    for (let y = y0; y < y1; y++)
+      for (let x = x0; x < x1; x++)
+        drawTile(gameMap[y][x] || 0,
+          Math.round(x * TILE_SZ - camX),
+          Math.round(y * TILE_SZ - camY));
+  }
+
+  // ── Animation ─────────────────────────────────────────────────────────────
+  if (pMoving) {
+    pFrameTimer++;
+    if (pFrameTimer >= FRAME_SPEED) { pFrameTimer = 0; pFrame = (pFrame + 1) % NUM_FRAMES; }
+  } else {
+    pFrame = 0; pFrameTimer = 0;
+  }
+
+  // ── Player screen pos ─────────────────────────────────────────────────────
+  const psx = Math.round(pPx.x - camX);
+  const psy = Math.round(pPx.y - camY);
+
+  // ── Draw monsters (behind player) ────────────────────────────────────────
+  if (useServerMonsters) {
+    drawServerMonsters(camX, camY);
+  } else {
+    // [PERF] Only update monster AI every 2 frames (halves AI cost)
+    if (!window._monFrame) window._monFrame = 0;
+    window._monFrame++;
+    if (window._monFrame % 2 === 0) updateMonsters();
+    drawMonsters(camX, camY);
+  }
+
+  // ── Draw remote players (behind local player) ─────────────────────────────
+  drawOtherPlayers(camX, camY);
+
+
+
+  // Player sprite
+  drawPlayer(psx, psy, pDir, pFrame);
+
+  // ── Draw canvas attack effects (on top of player) ─────────────────────────
+  drawAttackEffects();
+
+  // HP bar + name tag — diposisikan di atas kepala sprite
+  // Player sprite puncak kepala ada di: psy + TILE_SZ - DRAW_H = psy - TILE_SZ
+  const headY  = psy - TILE_SZ;       // puncak kepala (pixel)
+  const barW   = TILE_SZ * 1.4;
+  const barX   = psx + TILE_SZ/2 - barW/2;
+
+  // Name tag — 12px di atas kepala
+  gctx.font = '5px "Press Start 2P"';
+  gctx.textAlign = 'center';
+  gctx.fillStyle = '#00ffff';
+  gctx.shadowColor = '#00ffff'; gctx.shadowBlur = 3;
+  gctx.fillText((myName||'YOU').slice(0,12), psx + TILE_SZ/2, headY - 12);
+  gctx.shadowBlur = 0;
+
+  // HP bar — 6px di atas kepala (di bawah nama)
+  gctx.fillStyle = 'rgba(0,0,0,.7)';
+  gctx.fillRect(barX, headY - 8, barW, 4);
+  gctx.fillStyle = '#ff0066';
+  gctx.fillRect(barX + 1, headY - 7, (barW - 2) * (hp / maxHp), 2);
+
+  renderMinimap();
+
+  // [DEBUG] Monster count on screen
+  gctx.save();
+  gctx.fillStyle = 'rgba(0,0,0,0.7)';
+  gctx.fillRect(gc.width/2 - 60, 4, 120, 18);
+  gctx.fillStyle = monsters.length > 0 ? '#00ff88' : '#ff4444';
+  gctx.font = '7px "Press Start 2P"';
+  gctx.textAlign = 'center';
+  gctx.fillText('MONSTERS: ' + monsters.length, gc.width/2, 16);
+  gctx.textAlign = 'left';
+  gctx.restore();
+
+  requestAnimationFrame(render);
+}
+
+function renderMinimap() {
+  mmctx.fillStyle = '#0a0015';
+  mmctx.fillRect(0,0,190,190);
+  const sc = 190/MAP_W;
+  const MC = {0:'#1a1a2e',1:'#3a3a4e',2:'#4a4a5e',3:'#7c7cff',4:'#5a5a8f',
+    5:'#00ffff',6:'#ff00ff',7:'#223355',8:'#445566',9:'#00ff00',
+    10:'#ff00aa',11:'#333344',12:'#3a3a4e',13:'#2a2a2a'};
+  for (let y=0;y<MAP_H;y++) for (let x=0;x<MAP_W;x++) {
+    mmctx.fillStyle = MC[gameMap[y]?.[x]||0]||'#111';
+    mmctx.fillRect(x*sc, y*sc, sc+.5, sc+.5);
+  }
+  // Remote players on minimap (before local player so local is on top)
+  const _mmps = 190/MAP_W;
+  const _CC = { warrior:'#f5c842', mage:'#9b30ff', rogue:'#00f5ff', tank:'#39ff14' };
+  for (const rp of Object.values(remotePlayers)) {
+    if (!rp || rp.x == null) continue;
+    mmctx.fillStyle = _CC[rp.charId] || '#ff8800';
+    mmctx.fillRect(rp.x * _mmps - 2, rp.y * _mmps - 2, 4, 4);
+  }
+  // Local player dot on minimap
+  mmctx.fillStyle='#ff0066';
+  const ps=_mmps;
+  mmctx.fillRect(pTile.x*ps-2, pTile.y*ps-2, 5, 5);
+  // Monsters on minimap
+  mmctx.fillStyle='#ff00ff';
+  monsters.forEach(m => {
+    mmctx.fillRect(m.x*ps-1, m.y*ps-1, 3, 3);
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  ASSET LOADER - Preload all monster sprite images
+// ═══════════════════════════════════════════════════════
+// [PERF] Lazy monster image loader — only load sprites for types that actually spawn
+const monsterImgs = MONSTER_SPRITES.map(() => ({ idle:[], walk:[], attack:[], die:[], hurt:[] }));
+const _monImgLoaded = new Array(MONSTER_SPRITES.length).fill(false);
+function ensureMonsterImgs(typeIdx) {
+  if (_monImgLoaded[typeIdx]) return;
+  _monImgLoaded[typeIdx] = true;
+  const md = MONSTER_SPRITES[typeIdx];
+  const load = arr => arr.map(src => { const img = new Image(); img.src = src; return img; });
+  monsterImgs[typeIdx].idle   = load(md.idle);
+  monsterImgs[typeIdx].walk   = load(md.walk);
+  monsterImgs[typeIdx].attack = load(md.attack);
+  monsterImgs[typeIdx].die    = load(md.die);
+  monsterImgs[typeIdx].hurt   = load(md.hurt);
+}
+
+const weaponImgEls = WEAPON_DATA.map(wd => {
+  const img = new Image(); img.src = wd.icon; return img;
+});
+
+// ═══════════════════════════════════════════════════════
+//  MONSTER SYSTEM
+const ANIM_SPEED = {idle:8, walk:6, attack:5, die:6, hurt:5};
+
+function spawnMonster() {
+  if (monsters.length >= 4) return;
+
+  let mx, my;
+  if (_dungeonLoaded && dungeon && dungeon.current) {
+    // Use dungeon ground layer as authoritative walkable tiles
+    const floor   = dungeon.current;
+    const ground  = floor.ground  || {};
+    const solid   = floor.solidTiles || {};
+    const objs    = floor.objects || {};
+    const keys    = Object.keys(ground).filter(k => {
+      if (solid[k] || objs[k]) return false;
+      const [tx, ty] = k.split(',').map(Number);
+      return Math.abs(tx-pPos.x) > 5 || Math.abs(ty-pPos.y) > 5;
+    });
+    if (!keys.length) return;
+    const pick = keys[Math.floor(Math.random() * Math.min(keys.length, 300))];
+    [mx, my] = pick.split(',').map(Number);
+  } else {
+    if (!gameMap.length) return;
+    const gW = (gameMap[0] && gameMap[0].length) || 32;
+    const gH = gameMap.length || 32;
+    let tries = 0;
+    do {
+      mx = 1 + Math.floor(Math.random()*(gW-2));
+      my = 1 + Math.floor(Math.random()*(gH-2));
+      tries++;
+    } while(tries<300 && (!walkable(gameMap[my]?.[mx]||0) ||
+      (Math.abs(mx-pPos.x)<5 && Math.abs(my-pPos.y)<5)));
+    if(!walkable(gameMap[my]?.[mx]||0)) return;
+  }
+
+  const typeIdx = Math.floor(Math.random()*MONSTER_SPRITES.length);
+  ensureMonsterImgs(typeIdx); // [PERF] lazy-load sprites only when needed
+  const md = MONSTER_SPRITES[typeIdx];
+  const m = {
+    id: monsterIdCtr++,
+    x: mx, y: my,
+    typeIdx, name: md.name, color: md.color,
+    hp: md.maxHp, maxHp: md.maxHp,
+    anim: 'idle', frame: 0, frameTimer: 0,
+    moveTimer: 0, attackCooldown: 0,
+    state: 'idle',   // idle | chase | attacking | hurt | dying
+    hurtTimer: 0,
+    dyingTimer: 0, alpha: 1
+  };
+  m.px = m.x * TILE_SZ;  // [FIX] init pixel pos to avoid NaN sort
+  m.py = m.y * TILE_SZ;
+  monsters.push(m);
+
+  // Alert in killfeed
+  const kf = document.getElementById('killfeed');
+  const el = document.createElement('div'); el.className='kn';
+  el.style.borderColor='#ff0066';
+  el.innerHTML = `⚠️ <span class="mn">${md.name}</span> <span style="color:#ff0066">appeared!</span>`;
+  kf.insertBefore(el, kf.firstChild); setTimeout(()=>el.remove(), 3000);
+  while(kf.children.length>5) kf.removeChild(kf.lastChild);
+}
+
+function updateMonsters(dt) {
+  monsters.forEach(m => {
+    const md = MONSTER_SPRITES[m.typeIdx];
+    const imgs = monsterImgs[m.typeIdx];
+
+    // ── State machine ──
+    if(m.state === 'dying') {
+      m.dyingTimer++;
+      // Die animation plays first (6 frames × speed 4 = 24 ticks),
+      // then hold last frame and fade out over the remaining 36 ticks
+      const dieTotalFrames = imgs.die.length || 6;
+      const diePlayTicks   = dieTotalFrames * (ANIM_SPEED.die || 4); // e.g. 24
+      const dieTotalTicks  = diePlayTicks + 36;                       // e.g. 60
+      if(m.dyingTimer <= diePlayTicks) {
+        advanceAnim(m, imgs.die);          // play through die frames
+        m.alpha = 1;                        // full opacity while animating
+      } else {
+        // Hold last die frame, fade out
+        m.frame = (imgs.die.length || 1) - 1;
+        m.alpha = Math.max(0, 1 - (m.dyingTimer - diePlayTicks) / 36);
+      }
+      // Remove once fully transparent + played out
+      if(m.dyingTimer > dieTotalTicks) m._removePending = true;
+      return;
+    }
+    if(m.state === 'hurt') {
+      m.hurtTimer--;
+      advanceAnim(m, imgs.hurt);
+      if(m.hurtTimer <= 0) m.state = 'chase';
+      return;
+    }
+
+    const dx = pPos.x - m.x, dy = pPos.y - m.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    if(dist > 20) {
+      m.state = 'idle'; m.anim = 'idle';
+      advanceAnim(m, imgs.idle);
+      return;
+    }
+
+    // Attacking
+    if(dist <= 1.5) {
+      m.state = 'attacking'; m.anim = 'attack';
+      m.attackCooldown--;
+      advanceAnim(m, imgs.attack);
+      if(m.attackCooldown <= 0) {
+        m.attackCooldown = 40;
+        const dmgIn = Math.max(5, Math.floor(md.maxHp / 15));
+        if(shield > 0) { shield = Math.max(0, shield - dmgIn); }
+        else { hp = Math.max(0, hp - dmgIn); }
+        updateBars();
+        showDmgNum(Math.round(pPx.x - cam.x*TILE_SZ + TILE_SZ/2),
+                   Math.round(pPx.y - cam.y*TILE_SZ), '-'+dmgIn, '#ff0066', false);
+        if(hp <= 0) {
+          chat('sys','💀 You died! Respawning...');
+          hp=maxHp; shield=maxShield; updateBars();
+          pTile.x=MAP_CONFIG.startX||7; pTile.y=MAP_CONFIG.startY||5;
+          pPos.x=pTile.x; pPos.y=pTile.y;
+          pPx.x=pTile.x*TILE_SZ; pPx.y=pTile.y*TILE_SZ;
+          combo=0; updateStats();
+        }
+      }
+      return;
+    }
+
+    // Chasing / Moving
+    m.state = 'chase'; m.anim = 'walk';
+    m.moveTimer++;
+    if(m.moveTimer >= 10) {  // higher = slower monster movement
+      m.moveTimer = 0;
+      const absDx=Math.abs(dx), absDy=Math.abs(dy);
+      let moved=false;
+      // Try to move toward player
+      const tryMoves = absDx >= absDy
+        ? [[Math.sign(dx),0],[0,Math.sign(dy)]]
+        : [[0,Math.sign(dy)],[Math.sign(dx),0]];
+      for(const [mx,my] of tryMoves) {
+        const nx=m.x+mx, ny=m.y+my;
+        if(nx>=0&&nx<MAP_W&&ny>=0&&ny<MAP_H && walkable(gameMap[ny]?.[nx]||0) && !isSolidDungeonTile(nx,ny)) {
+          // Check no other monster occupying this tile
+          const blocked = monsters.some(o=>o.id!==m.id&&o.x===nx&&o.y===ny);
+          if(!blocked) { m.x=nx; m.y=ny; moved=true; break; }
+        }
+      }
+      if(!moved) {
+        // Random jitter to avoid stuck
+        const rMoves=[[1,0],[-1,0],[0,1],[0,-1]];
+        for(const [mx,my] of rMoves.sort(()=>Math.random()-.5)) {
+          const nx=m.x+mx,ny=m.y+my;
+          if(nx>=0&&nx<MAP_W&&ny>=0&&ny<MAP_H && walkable(gameMap[ny]?.[nx]||0) && !isSolidDungeonTile(nx,ny)) {
+            const blocked=monsters.some(o=>o.id!==m.id&&o.x===nx&&o.y===ny);
+            if(!blocked){m.x=nx;m.y=ny;break;}
+          }
+        }
+      }
+    }
+    advanceAnim(m, imgs.walk);
+  });
+
+  // Remove fully dead monsters (after die animation + fade completes)
+  monsters = monsters.filter(m => !m._removePending);
+}
+
+function advanceAnim(m, frameArr) {
+  if(!frameArr || frameArr.length === 0) return;
+  const speed = ANIM_SPEED[m.anim] || 6;
+  m.frameTimer++;
+  if(m.frameTimer >= speed) {
+    m.frameTimer = 0;
+    if(m.anim === 'die') {
+      // Play through once, hold on last frame — don't loop
+      m.frame = Math.min(m.frame + 1, frameArr.length - 1);
+    } else {
+      m.frame = (m.frame + 1) % frameArr.length;
+    }
+  }
+}
+
+function drawMonsters(camX, camY) {
+  // Sort by y for proper depth ordering
+  const sorted = [...monsters].sort((a,b) => a.py - b.py);
+  sorted.forEach(m => {
+    // Smooth monster pixel position
+    const targetMpx = m.x * TILE_SZ;
+    const targetMpy = m.y * TILE_SZ;
+    if (m.px === undefined) { m.px = targetMpx; m.py = targetMpy; }
+    const dxM = targetMpx - m.px, dyM = targetMpy - m.py;
+    const distM = Math.sqrt(dxM*dxM + dyM*dyM);
+    if (distM > 0.5) {
+      const stepM = Math.min(2, distM);  // monster slightly slower than player
+      m.px += (dxM/distM)*stepM;
+      m.py += (dyM/distM)*stepM;
+    } else { m.px = targetMpx; m.py = targetMpy; }
+
+    const sx = Math.round(m.px - camX);
+    const sy = Math.round(m.py - camY);
+    if(sx < -TILE_SZ*3 || sx > gc.width + TILE_SZ*3 ||
+       sy < -TILE_SZ*3 || sy > gc.height + TILE_SZ*3) return;
+
+    const imgs = monsterImgs[m.typeIdx];
+    const frameArr = imgs[m.anim] || imgs.idle;
+    const frameImg = frameArr[m.frame % Math.max(1, frameArr.length)];
+
+    gctx.save();
+    gctx.globalAlpha = m.alpha;
+
+    // Monster: 1.8x tile — clearly visible on screen
+    const drawW = TILE_SZ * 1.8;
+    const drawH = TILE_SZ * 1.8;
+    const destX = sx + TILE_SZ/2 - drawW/2;
+    const destY = sy + TILE_SZ/2 - drawH/2;
+
+    gctx.globalAlpha = m.alpha;
+
+    // Sprite
+    if(frameImg && frameImg.complete && frameImg.naturalWidth > 0) {
+      if(m.state === 'hurt') gctx.filter = 'sepia(1) saturate(10) hue-rotate(310deg)';
+      gctx.drawImage(frameImg, destX, destY, drawW, drawH);
+      gctx.filter = 'none';
+    } else {
+      // Pixel art fallback — no PNG needed
+      const _md = MONSTER_SPRITES[m.typeIdx];
+      const _pc = getMonsterPxCanvas(_md.name, m.frame % 3, Math.round(drawW), m.state==='hurt');
+      if (_pc) {
+        gctx.imageSmoothingEnabled = false;
+        gctx.drawImage(_pc, destX, destY, drawW, drawH);
+        gctx.imageSmoothingEnabled = false;
+      } else {
+        gctx.fillStyle = _md.color;
+        gctx.fillRect(sx + TILE_SZ*0.15, sy + TILE_SZ*0.1, TILE_SZ*0.7, TILE_SZ*0.8);
+      }
+    }
+
+    // HP bar (only when damaged)
+    if(m.state !== 'dying' && m.hp < m.maxHp) {
+      const bw = TILE_SZ * 1.4, bx = sx + TILE_SZ/2 - bw/2, by = destY - 7;
+      gctx.fillStyle = 'rgba(0,0,0,.75)'; gctx.fillRect(bx, by, bw, 4);
+      const pct = m.hp / m.maxHp;
+      gctx.fillStyle = pct > .5 ? '#00ff00' : pct > .25 ? '#ffff00' : '#ff0066';
+      gctx.fillRect(bx+1, by+1, (bw-2)*pct, 2);
+    }
+
+    // Name tag
+    if(m.state !== 'dying') {
+      gctx.font = '5px "Press Start 2P"';
+      gctx.textAlign = 'center';
+      gctx.fillStyle = MONSTER_SPRITES[m.typeIdx].color;
+      gctx.shadowBlur = 0;
+      gctx.fillText(m.name, sx + TILE_SZ/2, destY - 9);
+      gctx.shadowBlur = 0;
+    }
+
+    gctx.restore();
+  });
+}
+
+// ─── Damage number helper ───
+// ── Draw monsters from server state (multiplayer mode) ───────────────────────
+// Server monster type → MONSTER_SPRITES index mapping
+// Array order: 0=Cyber Bat, 1=Data Dragon, 2=Death Bot, 3=Glitch Beast, 4=Neon Wolf
+const SERVER_TYPE_TO_IDX = (() => {
+  const map = {};
+  const keywords = [
+    ['bat',    0],  // Cyber Bat
+    ['dragon', 1],  // Data Dragon
+    ['bot',    2],  // Death Bot
+    ['beast',  3],  // Glitch Beast
+    ['wolf',   4],  // Neon Wolf
+    ['demon',  2],  // fallback → Death Bot
+  ];
+  keywords.forEach(([k, i]) => { map[k] = i; });
+  return map;
+})();
+
+function getServerMonsterTypeIdx(type) {
+  if (type == null) return 0;
+  const t = String(type).toLowerCase();
+  for (const [key, idx] of Object.entries(SERVER_TYPE_TO_IDX)) {
+    if (t.includes(key)) return idx;
+  }
+  // Hash unknown types to a consistent sprite index
+  let hash = 0;
+  for (let i = 0; i < t.length; i++) hash = (hash * 31 + t.charCodeAt(i)) & 0xffff;
+  return hash % MONSTER_SPRITES.length;
+}
+
+// Per-server-monster animation state (id → { anim, frame, frameTimer, px, py, prevHp })
+const _sMonAnim = {};
+
+function getServerMonAnim(id, m) {
+  if (!_sMonAnim[id]) {
+    _sMonAnim[id] = {
+      anim: 'idle', frame: 0, frameTimer: 0,
+      px: (m.x||0)*TILE_SZ, py: (m.y||0)*TILE_SZ,
+      prevHp: m.hp != null ? m.hp : 9999,
+      hurtTimer: 0,
+    };
+  }
+  return _sMonAnim[id];
+}
+
+// Clean up anim state for monsters that disappeared
+function pruneServerMonAnims() {
+  for (const id of Object.keys(_sMonAnim)) {
+    if (!serverMonsters[id]) delete _sMonAnim[id];
+  }
+}
+
+function drawServerMonsters(camX, camY) {
+  pruneServerMonAnims();
+
+  // Sort by pixel Y for depth ordering
+  const entries = Object.entries(serverMonsters)
+    .filter(([, m]) => m != null)
+    .sort(([, a], [, b]) => (a.y || 0) - (b.y || 0));
+
+  for (const [id, m] of entries) {
+    // ── Smooth pixel position ──────────────────────────────────────────────
+    const sa = getServerMonAnim(id, m);
+    const targetPx = (m.x != null ? m.x * TILE_SZ : 0);
+    const targetPy = (m.y != null ? m.y * TILE_SZ : 0);
+
+    // Lerp toward target
+    const dxM = targetPx - sa.px, dyM = targetPy - sa.py;
+    const distM = Math.sqrt(dxM * dxM + dyM * dyM);
+    if (distM > 0.5) {
+      const step = Math.min(2.5, distM);
+      sa.px += (dxM / distM) * step;
+      sa.py += (dyM / distM) * step;
+    } else {
+      sa.px = targetPx;
+      sa.py = targetPy;
+    }
+
+    const sx = Math.round(sa.px - camX);
+    const sy = Math.round(sa.py - camY);
+    if (sx < -TILE_SZ * 3 || sx > gc.width  + TILE_SZ * 3 ||
+        sy < -TILE_SZ * 3 || sy > gc.height + TILE_SZ * 3) continue;
+
+    // ── Pick sprite set ────────────────────────────────────────────────────
+    const typeIdx = (m.typeIdx != null)
+      ? m.typeIdx                          // server already sends typeIdx
+      : getServerMonsterTypeIdx(m.type);   // derive from type string
+
+    const md   = MONSTER_SPRITES[typeIdx] || MONSTER_SPRITES[0];
+    const imgs = monsterImgs[typeIdx]     || monsterImgs[0];
+
+    // ── Determine anim state from server data ──────────────────────────────
+    const isDying = m.hp != null && m.hp <= 0;
+    const wasHurt = (m.hp != null && sa.prevHp != null && m.hp < sa.prevHp);
+    if (wasHurt && !isDying) { sa.hurtTimer = 12; }
+    sa.prevHp = m.hp != null ? m.hp : sa.prevHp;
+
+    if (isDying) {
+      sa.anim = 'die';
+    } else if (sa.hurtTimer > 0) {
+      sa.hurtTimer--;
+      sa.anim = 'hurt';
+    } else if (distM > 1) {
+      sa.anim = 'walk';
+    } else {
+      sa.anim = 'idle';
+    }
+
+    // ── Advance frame ──────────────────────────────────────────────────────
+    const frameArr = imgs[sa.anim] || imgs.idle || [];
+    const speed = ANIM_SPEED[sa.anim] || 6;
+    sa.frameTimer++;
+    if (sa.frameTimer >= speed) {
+      sa.frameTimer = 0;
+      if (sa.anim === 'die') {
+        // Hold on last frame — don't loop death animation
+        sa.frame = Math.min(sa.frame + 1, Math.max(0, frameArr.length - 1));
+      } else {
+        sa.frame = (sa.frame + 1) % Math.max(1, frameArr.length);
+      }
+    }
+    const frameImg = frameArr[sa.frame % Math.max(1, frameArr.length)];
+
+    const drawW = TILE_SZ * 1.8;
+    const drawH = TILE_SZ * 1.8;
+    const destX = sx + TILE_SZ / 2 - drawW / 2;
+    const destY = sy + TILE_SZ/2 - drawH/2;
+    const alpha = isDying ? Math.max(0, 1 - (sa.hurtTimer / 40)) : 1;
+
+    gctx.save();
+    gctx.globalAlpha = alpha;
+
+    gctx.globalAlpha = alpha;
+
+    // ── Sprite draw ────────────────────────────────────────────────────────
+    if (frameImg && frameImg.complete && frameImg.naturalWidth > 0) {
+      if (sa.anim === 'hurt') gctx.filter = 'sepia(1) saturate(10) hue-rotate(310deg)';
+      gctx.drawImage(frameImg, destX, destY, drawW, drawH);
+      gctx.filter = 'none';
+    } else {
+      // Pixel art fallback for server monsters
+      const _spc = getMonsterPxCanvas(md.name, sa.frame % 3, Math.round(drawW), sa.anim==='hurt');
+      if (_spc) {
+        gctx.imageSmoothingEnabled = false;
+        gctx.drawImage(_spc, destX, destY, drawW, drawH);
+        gctx.imageSmoothingEnabled = false;
+      } else {
+        gctx.fillStyle = md.color || '#888';
+        gctx.fillRect(sx + TILE_SZ * 0.15, sy + TILE_SZ * 0.1, TILE_SZ * 0.7, TILE_SZ * 0.8);
+      }
+    }
+
+    // ── HP bar (only when damaged) ─────────────────────────────────────────
+    if (!isDying && m.hp != null && m.maxHp > 0 && m.hp < m.maxHp) {
+      const bw = TILE_SZ * 1.4;
+      const bx = sx + TILE_SZ / 2 - bw / 2;
+      const by = destY - 7;
+      const pct = m.hp / m.maxHp;
+      gctx.fillStyle = 'rgba(0,0,0,.75)'; gctx.fillRect(bx, by, bw, 4);
+      gctx.fillStyle = pct > .5 ? '#00ff00' : pct > .25 ? '#ffff00' : '#ff0066';
+      gctx.fillRect(bx + 1, by + 1, (bw - 2) * pct, 2);
+    }
+
+    // ── Name tag ───────────────────────────────────────────────────────────
+    if (!isDying) {
+      const label = m.name || md.name || (m.type ? m.type.toUpperCase() : '???');
+      gctx.font = '5px "Press Start 2P"';
+      gctx.textAlign = 'center';
+      gctx.fillStyle = md.color || '#ffccaa';
+      gctx.shadowBlur = 0;
+      gctx.fillText(label, sx + TILE_SZ / 2, destY - 9);
+      gctx.shadowBlur = 0;
+    }
+
+    gctx.restore();
+  }
+  gctx.textAlign = 'left';
+}
+
+
+function showDmgNum(x, y, text, color, isCrit) {
+  const dn=document.createElement('div');
+  dn.className='dmg'+(isCrit?' crit':'');
+  dn.style.color=color||'#ff0066';
+  dn.style.textShadow=`0 0 6px ${color||'#ff0066'}`;
+  dn.textContent=text;
+  dn.style.left=(x + (Math.random()*40-20))+'px';
+  dn.style.top=(y - 30 + Math.random()*20)+'px';
+  document.body.appendChild(dn);
+  setTimeout(()=>dn.remove(),1000);
+}
+
+// ─── Canvas Attack Effect System ─────────────────────────────────────────────
+// Each active effect: { type, x, y, dir, age, maxAge, color, range }
+const _atkEffects = [];
+
+function spawnAttackEffect(wd) {
+  // Compute spawn position: in front of player's hand based on facing direction
+  const cx = pPx.x + TILE_SZ / 2;
+  const cy = pPx.y + TILE_SZ / 2;
+
+  // Offset in facing direction
+  const DIR_OFF = [
+    [ 0,  1],  // 0=south
+    [ 0, -1],  // 1=west (pDir=1 uses DIR_FOLDER west, so approx north-ish offset)
+    [ 1,  0],  // 2=east
+    [-1,  0],  // 3=north
+  ];
+  const [ox, oy] = DIR_OFF[pDir] || [1, 0];
+  const reach = (wd.range || 1.5) * TILE_SZ * 0.8;
+
+  _atkEffects.push({
+    type:   wd.type,
+    x:      cx + ox * reach,
+    y:      cy + oy * reach,
+    ox, oy,
+    dir:    pDir,
+    age:    0,
+    maxAge: wd.type === 'melee' ? 8 : wd.type === 'cone' ? 10 : 12,
+    color:  wd.color || '#ff0066',
+    range:  (wd.range || 1.5) * TILE_SZ,
+    srcX:   cx,
+    srcY:   cy,
+  });
+}
+
+function drawAttackEffects() {
+  for (let i = _atkEffects.length - 1; i >= 0; i--) {
+    const e = _atkEffects[i];
+    e.age++;
+    if (e.age > e.maxAge) { _atkEffects.splice(i, 1); continue; }
+    const t = e.age / e.maxAge;
+    const alpha = (1 - t) * 0.85;
+    const camX = window._camX || 0, camY = window._camY || 0;
+    const px = e.srcX - camX, py = e.srcY - camY;
+    const ex = e.x - camX,   ey = e.y - camY;
+    const R = e.range * 0.5; // half range for compact effects
+
+    gctx.save();
+    gctx.globalAlpha = alpha;
+
+    switch (e.type) {
+      case 'melee': { // small arc slash
+        const baseA = Math.atan2(e.oy, e.ox);
+        const endA  = baseA - 0.7 + t * 1.4;
+        gctx.strokeStyle = e.color; gctx.lineWidth = 3;
+        gctx.beginPath(); gctx.arc(px, py, R * 0.7, baseA - 0.7, endA); gctx.stroke();
+        break;
+      }
+      case 'short': { // arrow streak
+        const ax = px + e.ox * R * t * 1.5, ay = py + e.oy * R * t * 1.5;
+        const bx = px + e.ox * R * Math.max(0, t - 0.3) * 1.5, by = py + e.oy * R * Math.max(0, t - 0.3) * 1.5;
+        gctx.strokeStyle = e.color; gctx.lineWidth = 3;
+        gctx.beginPath(); gctx.moveTo(bx, by); gctx.lineTo(ax, ay); gctx.stroke();
+        gctx.fillStyle = '#fff';
+        gctx.beginPath(); gctx.arc(ax, ay, 3, 0, Math.PI*2); gctx.fill();
+        break;
+      }
+      case 'long': { // laser beam - thin line only
+        const far = 300;
+        gctx.strokeStyle = e.color; gctx.lineWidth = 4 * (1-t);
+        gctx.beginPath(); gctx.moveTo(px, py); gctx.lineTo(px + e.ox*far, py + e.oy*far); gctx.stroke();
+        gctx.strokeStyle = '#fff'; gctx.lineWidth = 1.5;
+        gctx.beginPath(); gctx.moveTo(px, py); gctx.lineTo(px + e.ox*far, py + e.oy*far); gctx.stroke();
+        break;
+      }
+      case 'aoe': { // small explosion ring
+        const r2 = R * (0.2 + t * 0.8);
+        gctx.strokeStyle = e.color; gctx.lineWidth = 3 * (1-t);
+        gctx.beginPath(); gctx.arc(ex, ey, r2, 0, Math.PI*2); gctx.stroke();
+        // 4 bolt lines
+        for (let b = 0; b < 4; b++) {
+          const a = (b/4)*Math.PI*2 + t;
+          gctx.strokeStyle = e.color; gctx.lineWidth = 1.5;
+          gctx.beginPath(); gctx.moveTo(px, py);
+          gctx.lineTo(px + Math.cos(a)*r2, py + Math.sin(a)*r2); gctx.stroke();
+        }
+        break;
+      }
+      case 'cone': { // fire wedge
+        const baseA2 = Math.atan2(e.oy, e.ox);
+        const cw = 0.5, cr = R * (0.5 + t * 0.7);
+        gctx.fillStyle = t < 0.5 ? '#ff6600' : '#ff3300';
+        gctx.beginPath(); gctx.moveTo(px, py);
+        gctx.arc(px, py, cr, baseA2 - cw, baseA2 + cw);
+        gctx.closePath(); gctx.fill();
+        break;
+      }
+      case 'freeze': { // ice ring
+        const ir = R * (0.3 + t * 0.9);
+        gctx.strokeStyle = e.color; gctx.lineWidth = 3 * (1-t);
+        gctx.beginPath(); gctx.arc(ex, ey, ir, 0, Math.PI*2); gctx.stroke();
+        for (let s = 0; s < 4; s++) {
+          const sa = (s/4)*Math.PI*2;
+          gctx.strokeStyle = '#aaddff'; gctx.lineWidth = 1;
+          gctx.beginPath(); gctx.moveTo(ex, ey);
+          gctx.lineTo(ex + Math.cos(sa)*ir, ey + Math.sin(sa)*ir); gctx.stroke();
+        }
+        break;
+      }
+    }
+    gctx.restore();
+  }
+}
+
+// ─── Weapon swing animation ───
+function doWeaponSwing() {
+  const slotEl=document.getElementById('slot'+weapon);
+  if(!slotEl) return;
+  slotEl.classList.remove('swinging');
+  void slotEl.offsetWidth; // reflow
+  slotEl.classList.add('swinging');
+  setTimeout(()=>slotEl.classList.remove('swinging'),300);
+
+  // Screen flash based on weapon color
+  const flash=document.getElementById('atkflash');
+  const wcolor=WEAPON_DATA[weapon]?.color||'#ff0066';
+  flash.style.background=wcolor+'22';
+  flash.style.opacity='1';
+  setTimeout(()=>{ flash.style.opacity='0'; },80);
+
+  // Spawn canvas attack effect
+  const wd = WEAPON_DATA[weapon];
+  if (wd) spawnAttackEffect(wd);
+}
+
+// ─── Attack nearby monster ───
+function attackNearbyMonster() {
+  const wd = WEAPON_DATA[weapon];
+  if(!wd) return false;
+  const range = wd.range || 1.5;
+
+  let target=null, minDist=Infinity;
+  monsters.forEach(m=>{
+    if(m.state==='dying') return;
+    const dx=m.x-pPos.x, dy=m.y-pPos.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<=range && dist<minDist){minDist=dist;target=m;}
+  });
+
+  doWeaponSwing();
+
+  // ── Server attack (PvP + server monster sync) ──────────────────────────────
+  if (socket && myId) {
+    socket.emit('attack', { x: pPx.x, y: pPx.y });
+
+    // PvP: check if any remote player is in range
+    if (pvpEnabled) {
+      const wd2 = WEAPON_DATA[weapon];
+      for (const [rid, rp] of Object.entries(remotePlayers)) {
+        if (!rp) continue;
+        const rpx = rp.px !== undefined ? rp.px : rp.x * TILE_SZ;
+        const rpy = rp.py !== undefined ? rp.py : rp.y * TILE_SZ;
+        const ddx = rpx - pPx.x, ddy = rpy - pPx.y;
+        const rdist = Math.sqrt(ddx*ddx + ddy*ddy);
+        if (rdist < (wd2.range || 1.5) * TILE_SZ) {
+          const isCrit = Math.random() > 0.78;
+          const pvpDmg = isCrit ? Math.floor(wd2.dmg * 1.6) : wd2.dmg;
+          socket.emit('pvpAttack', { targetId: rid, damage: pvpDmg });
+          const tsx = Math.round(rpx - cam.x * TILE_SZ);
+          const tsy = Math.round(rpy - cam.y * TILE_SZ);
+          showDmgNum(tsx, tsy, (isCrit?'💥':'')+pvpDmg+'⚔️', isCrit?'#ffaa00':'#ff6600', isCrit);
+          chat('sys', '⚔️ Hit ' + (rp.username||'Player') + ' for ' + pvpDmg + ' dmg!');
+        }
+      }
+    }
+  }
+
+  if(!target) {
+    showDmgNum(gc.width/2, gc.height/2-40, 'MISS!', '#7c7cff', false);
+    return false;
+  }
+
+  const isCrit=Math.random()>0.78;
+  const base=wd.dmg;
+  const dmg=isCrit?Math.floor(base*1.6):base;
+
+  target.hp -= dmg;
+  target.state='hurt';
+  target.anim='hurt';
+  target.frame=0;
+  target.hurtTimer=8;
+
+  const tsx=Math.round((target.px !== undefined ? target.px : target.x*TILE_SZ) - cam.x*TILE_SZ + TILE_SZ/2);
+  const tsy=Math.round((target.py !== undefined ? target.py : target.y*TILE_SZ) - cam.y*TILE_SZ);
+  showDmgNum(tsx, tsy, (isCrit?'💥':'')+dmg, isCrit?'#ffff00':'#ff6600', isCrit);
+
+  if(target.hp<=0) {
+    target.state='dying'; target.anim='die'; target.frame=0; target.dyingTimer=0;
+    doKill(target.name, dmg);
+  } else {
+    dmgTotal+=dmg; updateStats();
+  }
+  return true;
+}
+
+function doKill(mName, dmgAmt) {
+  const d=dmgAmt||+(document.querySelectorAll('.slot')[weapon]?.dataset?.dmg||25);
+  kp+=10+Math.floor(d/10); kills++; dmgTotal+=d; combo++;
+  const kf=document.getElementById('killfeed');
+  const el=document.createElement('div');el.className='kn';
+  el.innerHTML=`💀 <span class="mn">${mName}</span> +<span class="pe">${10+Math.floor(d/10)}pts</span>`;
+  kf.insertBefore(el,kf.firstChild);setTimeout(()=>el.remove(),3200);
+  while(kf.children.length>5)kf.removeChild(kf.lastChild);
+  updateStats();
+  // Small token reward per kill
+  tok+=0.01; document.getElementById('wtok').textContent=tok.toFixed(2);
+}
+
+// ═══════════════════════════════════════════════════════
+//  GAME STATE & UI
+// ═══════════════════════════════════════════════════════
+let hp=100,maxHp=100,shield=50,maxShield=50;
+let kp=0,tok=0,kills=0,dmgTotal=0,combo=0,weapon=0;
+
+function updateBars() {
+  document.getElementById('hpbar').style.width=(hp/maxHp*100)+'%';
+  document.getElementById('hptxt').textContent=hp+'/'+maxHp;
+  document.getElementById('shbar').style.width=(shield/maxShield*100)+'%';
+  document.getElementById('shtxt').textContent=shield+'/'+maxShield;
+}
+function updateStats() {
+  document.getElementById('wkp').textContent=kp;
+  document.getElementById('wtok').textContent=tok.toFixed(2);
+  document.getElementById('ckills').textContent=kills;
+  document.getElementById('cdmg').textContent=dmgTotal;
+  document.getElementById('ccombo').textContent='x'+combo;
+}
+
+
+
+function chat(type,msg,user=''){
+  const cb=document.getElementById('chatbox');
+  const m=document.createElement('div');
+  m.className=type==='sys'?'sys':'plr';
+  m.innerHTML=type==='plr'?`<span style="color:#7c7cff">${user}:</span> ${msg}`:msg;
+  cb.appendChild(m);cb.scrollTop=cb.scrollHeight;
+  while(cb.children.length>50)cb.removeChild(cb.firstChild);
+}
+
+document.getElementById('chatsend').onclick=sendChat;
+document.getElementById('chatinput').addEventListener('keypress',e=>{if(e.key==='Enter')sendChat();});
+function sendChat(){
+  const i = document.getElementById('chatinput');
+  const msg = i.value.trim();
+  if (!msg) return;
+  i.value = '';
+  if (socket && myId) {
+    // Send to server for broadcast
+    socket.emit('chat', { message: msg });
+  }
+  chat('plr', msg, myName || 'YOU');
+}
+
+document.getElementById('wclaim').onclick=()=>{
+  if(kp>=100){const t=Math.floor(kp/100);tok+=t;kp%=100;updateStats();chat('sys','💰 Claimed '+t+' $CATPUNK!');}
+  else chat('sys','⚠️ Need 100 pts');
+};
+
+const slots=document.querySelectorAll('.slot');
+slots.forEach((s,i)=>s.addEventListener('click',()=>{
+  if(i===6)openLB();
+  else{weapon=i;slots.forEach((sl,j)=>sl.classList.toggle('on',i===j));}
+}));
+
+document.getElementById('lbclose').onclick=()=>document.getElementById('lb').classList.remove('open');
+function openLB(){
+  const data=[
+    {r:1,n:'CyberCat69',k:420,p:4200},{r:2,n:'NeonSlayer',k:350,p:3500},
+    {r:3,n:'GlitchHunter',k:280,p:2800},{r:4,n:'PixelWarrior',k:210,p:2100},
+    {r:5,n:'YOU',k:kills,p:kp}
+  ];
+  const c=document.getElementById('lbcontent');c.innerHTML='';
+  data.forEach(e=>{const d=document.createElement('div');d.className='le'+(e.r<=3?' g'+e.r:'');
+    d.innerHTML=`<span style="color:#ff00ff">#${e.r}</span><span style="color:#00ffff">${e.n}</span><span style="color:#ff0066">💀${e.k}</span><span style="color:#00ff00">⭐${e.p}</span>`;
+    c.appendChild(d);});
+  document.getElementById('lb').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════
+//  MOVEMENT  (180ms interval = jalan pelan)
+// ═══════════════════════════════════════════════════════
+const K={};
+document.addEventListener('keydown',e=>{
+  K[e.key.toLowerCase()]=true;
+  if('123456'.includes(e.key)){weapon=+e.key-1;slots.forEach((s,i)=>s.classList.toggle('on',i===weapon));}
+  if(e.key.toLowerCase()==='l') openLB();
+  if(e.key==='Escape') document.getElementById('lb').classList.remove('open');
+  if(e.key===' '){e.preventDefault();attackNearbyMonster();}
+});
+document.addEventListener('keyup',e=>K[e.key.toLowerCase()]=false);
+
+// Movement tick: how often player can step to next tile (ms)
+// 120ms = ~8 tiles/s max, smooth feel at 3px/frame interpolation
+const MOVE_INTERVAL = 120;
+
+setInterval(() => {
+  if (!gameMap.length) return;
+
+  // Only queue next tile step if player has nearly arrived at current target
+  const arrivedX = Math.abs(pPx.x - pTile.x * TILE_SZ) < TILE_SZ * 0.6;
+  const arrivedY = Math.abs(pPx.y - pTile.y * TILE_SZ) < TILE_SZ * 0.6;
+  if (!arrivedX || !arrivedY) return; // still moving to current tile
+
+  let newX = pTile.x, newY = pTile.y;
+
+  if (K['w'] || K['arrowup']) {
+    const ty = Math.max(0, newY - 1);
+    if (walkable(gameMap[ty]?.[newX] ?? 0) && !isSolidDungeonTile(newX, ty)) { newY = ty; pDir = 3; }
+  } else if (K['s'] || K['arrowdown']) {
+    const ty = Math.min(MAP_H - 1, newY + 1);
+    if (walkable(gameMap[ty]?.[newX] ?? 0) && !isSolidDungeonTile(newX, ty)) { newY = ty; pDir = 0; }
+  }
+  if (K['a'] || K['arrowleft']) {
+    const tx = Math.max(0, newX - 1);
+    if (walkable(gameMap[newY]?.[tx] ?? 0) && !isSolidDungeonTile(tx, newY)) { newX = tx; pDir = 1; }
+  } else if (K['d'] || K['arrowright']) {
+    const tx = Math.min(MAP_W - 1, newX + 1);
+    if (walkable(gameMap[newY]?.[tx] ?? 0) && !isSolidDungeonTile(tx, newY)) { newX = tx; pDir = 2; }
+  }
+
+  pTile.x = newX; pTile.y = newY;
+  pPos.x  = newX; pPos.y  = newY; // keep monster AI in sync
+  if (newX !== lastSentX || newY !== lastSentY) sendPlayerState();
+}, MOVE_INTERVAL);
+
+// Monster spawn - every 7 seconds if below max
+setInterval(()=>{
+  if(!useServerMonsters && monsters.length < 4) spawnMonster();
+},4000);
+setInterval(()=>{
+  if(hp<maxHp){hp=Math.min(maxHp,hp+5);updateBars();}
+  if(shield<maxShield){shield=Math.min(maxShield,shield+3);updateBars();}
+},2000);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MULTIPLAYER — Socket.io Integration
+// ═══════════════════════════════════════════════════════════════════════════
+(function initMultiplayer() {
+  if (typeof io === 'undefined') {
+    console.warn('[MP] socket.io not loaded — multiplayer disabled');
+    return;
+  }
+
+  socket = io();
+
+  // ── Connected ──────────────────────────────────────────────────────────────
+  socket.on('init', (data) => {
+    myId = data.id;
+    const p = data.player;
+    // Don't override local HP/shield — char-select already set them
+    // Only use server HP if we haven't chosen a char yet
+    if (!_charChosen) {
+      hp = p.hp; maxHp = p.maxHp;
+    }
+    useServerMonsters = true;
+    monsters.length = 0;
+    chat('sys', '🌐 Connected! ' + Object.keys(data.players||{}).length + ' player(s) online');
+    updateBars(); updateStats();
+
+    // Populate existing remote players from init snapshot
+    for (const [id, rp] of Object.entries(data.players || {})) {
+      if (id !== myId) {
+        remotePlayers[id] = { ...rp, px: rp.x * TILE_SZ, py: rp.y * TILE_SZ };
+      }
+    }
+    // Populate server monsters from init snapshot
+    serverMonsters = data.monsters || {};
+  });
+
+  // Real username/class update from server
+  socket.on('playerUpdate', (p) => {
+    if (p.id === myId) return;
+    if (!remotePlayers[p.id]) remotePlayers[p.id] = { px: p.x * TILE_SZ, py: p.y * TILE_SZ };
+    Object.assign(remotePlayers[p.id], p);
+  });
+
+  // Server-authoritative monster attack on local player
+  socket.on('monsterAttack', (data) => {
+    if (data.targetId !== myId) return;
+    hp = Math.max(0, hp - data.damage);
+    updateBars();
+    // Flash screen red
+    const fl = document.createElement('div');
+    fl.style.cssText = 'position:fixed;inset:0;background:rgba(255,0,0,.22);pointer-events:none;z-index:998;';
+    document.body.appendChild(fl);
+    setTimeout(() => fl.remove(), 300);
+  });
+
+  // ── Other player joined ────────────────────────────────────────────────────
+  socket.on('playerJoined', (p) => {
+    remotePlayers[p.id] = { ...p, px: p.x * TILE_SZ, py: p.y * TILE_SZ };
+    chat('sys', '👋 ' + p.username + ' joined!');
+  });
+
+  socket.on('playerLeft', (id) => {
+    const name = remotePlayers[id] ? remotePlayers[id].username : 'Player';
+    delete remotePlayers[id];
+    chat('sys', '👋 ' + name + ' left');
+  });
+
+  // ── Game state broadcast (20fps from server) ──────────────────────────────
+  socket.on('state', (state) => {
+    // Update remote players
+    for (const [id, p] of Object.entries(state.players || {})) {
+      if (id === myId) {
+        // Update our own HP from server
+        if (p.hp !== undefined) { hp = p.hp; updateBars(); }
+        continue;
+      }
+      if (!remotePlayers[id]) {
+        remotePlayers[id] = { px: p.x * TILE_SZ, py: p.y * TILE_SZ };
+      }
+      Object.assign(remotePlayers[id], p);
+    }
+    // Remove disconnected players
+    for (const id of Object.keys(remotePlayers)) {
+      if (!state.players[id]) delete remotePlayers[id];
+    }
+    // Update server monsters
+    serverMonsters = state.monsters || {};
+  });
+
+  // ── Online count ───────────────────────────────────────────────────────────
+  socket.on('onlineCount', (n) => {
+    const el = document.getElementById('online-count');
+    if (el) el.textContent = n + ' online';
+  });
+
+  // ── Chat from other players ────────────────────────────────────────────────
+  socket.on('chat', (data) => {
+    if (data.playerId === myId) return; // already shown locally
+    chat('plr', data.message, data.username);
+  });
+
+  // ── Combat events ──────────────────────────────────────────────────────────
+  socket.on('monsterDamage', (data) => {
+    // Show damage popup on server monsters
+    showDmgPopup(data.monsterId, data.damage);
+  });
+
+  socket.on('monsterKilled', (data) => {
+    if (data.killerId === myId) {
+      chat('sys', '⚔️ You killed the monster! XP gained.');
+    } else {
+      const killer = remotePlayers[data.killerId];
+      if (killer) chat('sys', '💀 ' + killer.username + ' killed a monster!');
+    }
+  });
+
+  socket.on('playerLevelUp', (data) => {
+    if (data.playerId === myId) {
+      chat('sys', '🎉 LEVEL UP! You are now Lv' + data.level + '!');
+    } else {
+      const p = remotePlayers[data.playerId];
+      if (p) { p.level = data.level; chat('sys', '⬆ ' + p.username + ' reached Lv' + data.level); }
+    }
+  });
+
+  socket.on('playerDeath', (data) => {
+    if (data.playerId === myId) {
+      chat('sys', '💀 You died! Respawning...');
+      setTimeout(() => { hp = maxHp; updateBars(); }, 2000);
+    } else {
+      const p = remotePlayers[data.playerId];
+      if (p) chat('sys', '💀 ' + p.username + ' was killed!');
+    }
+  });
+
+  // PvP damage received
+  socket.on('pvpHit', (data) => {
+    if (data.targetId === myId) {
+      hp = Math.max(0, hp - data.damage);
+      updateBars();
+      chat('sys', '⚔️ ' + (data.attackerName||'Player') + ' hit you for ' + data.damage + ' dmg!');
+      // Flash screen red
+      const fl = document.createElement('div');
+      fl.style.cssText = 'position:fixed;inset:0;background:rgba(255,0,0,0.25);pointer-events:none;z-index:999;animation:fup .4s forwards';
+      document.body.appendChild(fl); setTimeout(() => fl.remove(), 400);
+    }
+  });
+
+  socket.on('pvpHitConfirm', (data) => {
+    chat('sys', '⚔️ Hit ' + data.targetName + ' for ' + data.damage + ' dmg!');
+  });
+
+  socket.on('pvpKill', (data) => {
+    chat('sys', '🏆 You killed ' + data.targetName + '! +' + data.xp + ' XP');
+    kp += 20; score += 50; updateStats();
+  });
+
+  // ── Map hot-reload ─────────────────────────────────────────────────────────
+  socket.on('mapUpdate', (info) => {
+    chat('sys', '🗺️ Map updated: ' + info.name);
+    const reloadPath = info.path || ('assets/maps/' + info.filename) || '/api/map';
+    fetch(reloadPath)
+      .then(r => { if(!r.ok) throw new Error(); return r.json(); })
+      .then(data => {
+        if (data && (data.floors || data.dungeonData || data.levels)) {
+          if (dungeon) loadDungeonData(data);
+          MAP_CONFIG.width  = data.width  || MAP_CONFIG.width;
+          MAP_CONFIG.height = data.height || MAP_CONFIG.height;
+          MAP_CONFIG.name   = data.name   || info.name;
+          chat('sys', '✅ Dungeon live-reloaded: ' + (data.name || info.name));
+        } else if (data && data.mapData) {
+          gameMap = data.mapData.map(r=>[...r]);
+          MAP_CONFIG.width=data.width; MAP_CONFIG.height=data.height;
+          MAP_CONFIG.startX=data.startX; MAP_CONFIG.startY=data.startY;
+          MAP_CONFIG.name=data.name; pPos.x=data.startX; pPos.y=data.startY;
+          chat('sys', '✅ Map live-reloaded!');
+        }
+      }).catch(() => {
+        fetch('/api/map').then(r=>r.json()).then(pd=>{
+          if(pd && pd.mapData) { gameMap=pd.mapData.map(r=>[...r]); chat('sys','✅ Reloaded via /api/map'); }
+        }).catch(()=>{});
+      });
+  });
+
+  // ── Send input to server every frame ──────────────────────────────────────
+  // Called from game loop (sendPlayerState)
+  console.log('[MP] Multiplayer initialized');
+})();
+
+// Send player state to server — called from input handler
+function sendPlayerState() {
+  if (!socket || !myId) return;
+  const tx = pTile.x, ty = pTile.y;
+  if (tx === lastSentX && ty === lastSentY) return; // no change
+  lastSentX = tx; lastSentY = ty;
+  socket.emit('move', { x: tx, y: ty, dir: pDir, frame: pFrame, hp, maxHp });
+}
+
+// Damage popup cache
+const _dmgPopups = {};
+function showDmgPopup(id, dmg) {
+  _dmgPopups[id] = { dmg, t: Date.now() };
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// CHARACTER DEFINITIONS
+// ════════════════════════════════════════════════════════════════
+const CHARACTERS = [
+  { id:'warrior', name:'CYBER WARRIOR', desc:'High HP & Shield. Melee powerhouse.', emoji:'⚔️',
+    color:'#f5c842', hp:160, shield:80, dmgMult:1.2,
+    px8:[0,1,1,1,1,1,1,0, 1,2,2,1,1,2,2,1, 1,2,1,2,2,1,2,1, 1,1,3,1,1,3,1,1,
+         0,1,1,1,1,1,1,0, 0,1,1,2,2,1,1,0, 0,1,0,1,1,0,1,0, 0,1,1,0,0,1,1,0],
+    pal:['transparent','#f5c842','#fff','#ff4400'] },
+  { id:'mage', name:'NEON MAGE', desc:'Massive spell damage. Fragile but deadly.', emoji:'🔮',
+    color:'#9b30ff', hp:90, shield:40, dmgMult:1.8,
+    px8:[0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 1,1,3,1,1,3,1,1, 0,1,1,1,1,1,1,0,
+         0,0,1,1,1,1,0,0, 0,1,1,2,2,1,1,0, 0,1,0,1,1,0,1,0, 0,0,1,1,1,1,0,0],
+    pal:['transparent','#9b30ff','#00f5ff','#ff00ff'] },
+  { id:'rogue', name:'PIXEL ROGUE', desc:'Fastest class. High crit & evasion.', emoji:'🗡️',
+    color:'#00f5ff', hp:110, shield:50, dmgMult:1.0,
+    px8:[0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 1,1,1,1,1,1,1,1, 0,1,3,1,1,3,1,0,
+         0,0,1,1,1,1,0,0, 0,1,1,2,2,1,1,0, 1,1,0,1,1,0,1,1, 0,1,0,0,0,0,1,0],
+    pal:['transparent','#00f5ff','#fff','#39ff14'] },
+  { id:'tank', name:'IRON TANK', desc:'Extreme HP & Shield. Built to survive.', emoji:'🛡️',
+    color:'#39ff14', hp:220, shield:130, dmgMult:0.75,
+    px8:[0,1,1,1,1,1,1,0, 1,2,2,2,2,2,2,1, 1,2,3,1,1,3,2,1, 1,2,1,1,1,1,2,1,
+         1,2,2,2,2,2,2,1, 0,1,2,1,1,2,1,0, 0,1,1,1,1,1,1,0, 0,1,1,0,0,1,1,0],
+    pal:['transparent','#39ff14','#00aa00','#fff'] },
+];
+
+let selectedChar = null;
+let _gameReady   = false;   // set true once tileset+player loaded
+let _charChosen  = false;   // set true when player clicks START
+
+// Draw 8x8 pixel character to canvas
+function drawCharPx(canvas, char, size) {
+  const ctx = canvas.getContext('2d');
+  const px  = Math.max(1, Math.floor(size / 8));
+  canvas.width  = 8 * px;
+  canvas.height = 8 * px;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      const ci = char.px8[y * 8 + x];
+      if (ci === 0) continue;
+      ctx.fillStyle = char.pal[ci];
+      ctx.fillRect(x * px, y * px, px, px);
+    }
+  }
+}
+
+// Build the grid of character cards
+function buildCharGrid() {
+  const grid = document.getElementById('cs-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  CHARACTERS.forEach(ch => {
+    const card = document.createElement('div');
+    card.className = 'cs-card';
+    card.id = 'cscard-' + ch.id;
+
+    const cvs = document.createElement('canvas');
+    card.appendChild(cvs);
+    setTimeout(() => drawCharPx(cvs, ch, 64), 0);
+
+    const maxHpVal     = 220;
+    const maxShVal     = 130;
+    const maxDmgMult   = 1.8;
+    card.innerHTML += `
+      <div class="cs-cname" style="color:${ch.color};text-shadow:0 0 8px ${ch.color}">${ch.name}</div>
+      <div class="cs-bar-lbl">HP</div>
+      <div class="cs-bar-track"><div class="cs-bar-fill" style="width:${Math.round(ch.hp/maxHpVal*100)}%;background:#ff2d7e;"></div></div>
+      <div class="cs-bar-lbl">SHIELD</div>
+      <div class="cs-bar-track"><div class="cs-bar-fill" style="width:${Math.round(ch.shield/maxShVal*100)}%;background:#00f5ff;"></div></div>
+      <div class="cs-bar-lbl">DAMAGE</div>
+      <div class="cs-bar-track"><div class="cs-bar-fill" style="width:${Math.round(ch.dmgMult/maxDmgMult*100)}%;background:#f5c842;"></div></div>
+    `;
+    // Re-attach canvas (innerHTML wipes it)
+    const cvs2 = document.createElement('canvas');
+    cvs2.style.cssText = 'display:block;margin:0 auto 10px;image-rendering:pixelated;width:64px;height:64px;';
+    card.insertBefore(cvs2, card.firstChild);
+    setTimeout(() => drawCharPx(cvs2, ch, 64), 10);
+
+    card.addEventListener('click',      () => pickChar(ch));
+    card.addEventListener('mouseenter', () => {
+      document.getElementById('cs-info').textContent = ch.emoji + ' ' + ch.desc;
+    });
+    grid.appendChild(card);
+  });
+}
+
+function pickChar(ch) {
+  selectedChar = ch;
+  CHARACTERS.forEach(c => {
+    const el = document.getElementById('cscard-' + c.id);
+    if (!el) return;
+    if (c === ch) {
+      el.style.borderColor  = ch.color;
+      el.style.boxShadow    = '0 0 18px ' + ch.color + '66';
+      el.style.background   = 'rgba(0,0,0,.6)';
+    } else {
+      el.style.borderColor  = '#1e1b35';
+      el.style.boxShadow    = 'none';
+      el.style.background   = '#0d0b1a';
+    }
+  });
+  document.getElementById('cs-info').textContent = ch.emoji + ' ' + ch.name + ' — ' + ch.desc;
+  const btn = document.getElementById('cs-startbtn');
+  btn.style.opacity       = '1';
+  btn.style.pointerEvents = 'auto';
+  btn.style.background    = ch.color;
+  document.getElementById('cs-hint').textContent = 'Press ENTER or click the button';
+}
+
+function csStart() {
+  if (!selectedChar) return;
+  const raw  = (document.getElementById('cs-nameinput').value.trim()) || 'CAT_PUNK';
+  myName = raw.replace(/[^A-Za-z0-9_\-]/g,'').slice(0,16) || 'CAT_PUNK';
+
+  // Apply class stats
+  maxHp     = selectedChar.hp;
+  hp        = maxHp;
+  maxShield = selectedChar.shield;
+  shield    = maxShield;
+  WEAPON_DATA.forEach(w => { w.dmg = Math.round(w.dmg * selectedChar.dmgMult); });
+
+  // Update hotbar labels
+  WEAPON_DATA.forEach((wd, i) => {
+    const slot = document.getElementById('slot' + i);
+    if (slot) {
+      const s = slot.querySelector('.sdmg');
+      if (s) s.textContent = wd.dmg;
+      slot.dataset.dmg = wd.dmg;
+    }
+  });
+
+  const nameEl = document.querySelector('.sname');
+  if (nameEl) nameEl.textContent = myName;
+  const lvlEl  = document.querySelector('.slvl');
+  if (lvlEl)   lvlEl.textContent = selectedChar.name.split(' ')[0];
+
+  // Apply equipped card bonus
+  applyCardStats();
+  updateBars(); updateStats();
+
+  _charChosen = true;
+
+  // Tell server our real name, class, and stats
+  if (typeof socket !== 'undefined' && socket) {
+    socket.emit('setName', {
+      username: myName,
+      charId:   selectedChar.id,
+      hp:       selectedChar.hp,
+      shield:   selectedChar.shield,
+    });
+  }
+
+  // Fade out char select
+  const el = document.getElementById('charsel');
+  el.style.transition = 'opacity .45s';
+  el.style.opacity    = '0';
+  setTimeout(() => { el.style.display = 'none'; }, 460);
+}
+
+// ════════════════════════════════════════════════════════════════
+// PIXEL ART MONSTER RENDERER  (canvas fallback when PNG missing)
+// ════════════════════════════════════════════════════════════════
+const MPXART = {
+  'Cyber Bat': {
+    pal: ['transparent','#cc44ff','#ff00ff','#ffff00'],
+    frames: [
+      [0,0,1,0,0,1,0,0, 0,1,1,1,1,1,1,0, 1,1,2,1,1,2,1,1, 1,1,1,1,1,1,1,1,
+       0,1,3,1,1,3,1,0, 0,0,1,1,1,1,0,0, 0,0,0,1,1,0,0,0, 0,0,0,0,0,0,0,0],
+      [0,0,0,1,1,0,0,0, 0,1,1,1,1,1,1,0, 1,1,2,1,1,2,1,1, 0,1,1,1,1,1,1,0,
+       0,1,3,1,1,3,1,0, 0,0,1,1,1,1,0,0, 0,0,0,1,1,0,0,0, 0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0, 0,0,0,1,1,0,0,0, 1,1,2,1,1,2,1,1, 1,1,1,1,1,1,1,1,
+       0,1,3,1,1,3,1,0, 0,1,1,1,1,1,1,0, 0,0,0,1,1,0,0,0, 0,0,0,0,0,0,0,0],
+    ]
+  },
+  'Data Dragon': {
+    pal: ['transparent','#cc3300','#ff6600','#ffaa00'],
+    frames: [
+      [0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 1,1,1,1,1,1,1,1, 1,3,1,1,1,1,3,1,
+       0,1,1,1,1,1,1,0, 0,0,1,3,3,1,0,0, 0,0,1,0,0,1,0,0, 0,1,1,0,0,1,1,0],
+      [0,1,1,1,1,1,1,0, 0,1,2,1,1,2,1,0, 1,1,1,1,1,1,1,1, 0,3,1,1,1,1,3,0,
+       0,1,1,1,1,1,1,0, 0,1,1,3,3,1,1,0, 0,0,1,0,0,1,0,0, 0,0,1,0,0,1,0,0],
+      [0,0,1,1,1,1,0,0, 1,1,2,1,1,2,1,1, 1,1,1,1,1,1,1,1, 1,3,1,1,1,1,3,1,
+       1,1,1,1,1,1,1,1, 0,0,1,3,3,1,0,0, 0,1,1,0,0,1,1,0, 0,0,1,0,0,1,0,0],
+    ]
+  },
+  'Death Bot': {
+    pal: ['transparent','#5566ff','#7c7cff','#00ffff'],
+    frames: [
+      [0,1,1,1,1,1,1,0, 1,2,1,1,1,1,2,1, 1,1,3,1,1,3,1,1, 1,1,1,1,1,1,1,1,
+       0,1,1,1,1,1,1,0, 1,0,1,0,0,1,0,1, 1,0,1,0,0,1,0,1, 0,1,1,0,0,1,1,0],
+      [0,1,1,1,1,1,1,0, 1,2,1,1,1,1,2,1, 1,1,3,1,1,3,1,1, 0,1,1,1,1,1,1,0,
+       1,1,1,1,1,1,1,1, 1,1,1,0,0,1,1,1, 0,0,1,0,0,1,0,0, 0,1,1,0,0,1,1,0],
+      [0,1,1,1,1,1,1,0, 1,2,1,1,1,1,2,1, 0,1,3,1,1,3,1,0, 1,1,1,1,1,1,1,1,
+       0,1,1,1,1,1,1,0, 0,1,1,0,0,1,1,0, 1,0,1,0,0,1,0,1, 0,0,1,0,0,1,0,0],
+    ]
+  },
+  'Glitch Beast': {
+    pal: ['transparent','#cc5500','#ff6600','#ffcc00'],
+    frames: [
+      [0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 1,1,1,1,1,1,1,1, 1,1,3,1,1,3,1,1,
+       0,1,1,1,1,1,1,0, 1,1,0,1,1,0,1,1, 1,0,0,0,0,0,0,1, 0,1,0,0,0,0,1,0],
+      [0,1,1,1,1,1,1,0, 0,1,2,1,1,2,1,0, 1,1,1,1,1,1,1,1, 0,1,3,1,1,3,1,0,
+       1,1,1,1,1,1,1,1, 1,1,0,1,1,0,1,1, 0,1,0,0,0,0,1,0, 0,0,1,0,0,1,0,0],
+      [0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 0,1,1,1,1,1,1,0, 1,1,3,1,1,3,1,1,
+       0,1,1,1,1,1,1,0, 0,1,0,1,1,0,1,0, 1,1,0,0,0,0,1,1, 0,1,0,0,0,0,1,0],
+    ]
+  },
+  'Neon Wolf': {
+    pal: ['transparent','#006644','#00ffcc','#ffffff'],
+    frames: [
+      [0,1,0,0,0,0,1,0, 1,1,0,1,1,0,1,1, 1,2,1,1,1,1,2,1, 1,1,3,1,1,3,1,1,
+       0,1,1,1,1,1,1,0, 0,1,0,1,1,0,1,0, 0,1,0,0,0,0,1,0, 0,1,1,0,0,1,1,0],
+      [0,1,0,0,0,0,1,0, 0,1,1,1,1,1,1,0, 0,2,1,1,1,1,2,0, 0,1,3,1,1,3,1,0,
+       0,1,1,1,1,1,1,0, 0,1,0,1,1,0,1,0, 0,1,1,0,0,1,1,0, 0,0,1,0,0,1,0,0],
+      [0,1,0,0,0,0,1,0, 1,1,0,1,1,0,1,1, 1,2,1,1,1,1,2,1, 0,1,3,1,1,3,1,0,
+       0,1,1,1,1,1,1,0, 0,0,1,1,1,1,0,0, 0,1,0,0,0,0,1,0, 1,1,0,0,0,0,1,1],
+    ]
+  },
+  'Void Demon': {
+    pal: ['transparent','#660099','#cc00ff','#ff66ff'],
+    frames: [
+      [0,0,1,1,1,1,0,0, 0,1,2,2,2,2,1,0, 1,2,1,3,3,1,2,1, 1,1,3,1,1,3,1,1,
+       0,1,1,2,2,1,1,0, 0,1,1,1,1,1,1,0, 0,0,1,0,0,1,0,0, 0,1,1,0,0,1,1,0],
+      [0,1,1,1,1,1,1,0, 0,1,2,2,2,2,1,0, 1,2,1,3,3,1,2,1, 0,1,3,1,1,3,1,0,
+       1,1,1,2,2,1,1,1, 0,0,1,1,1,1,0,0, 0,1,1,0,0,1,1,0, 0,0,1,0,0,1,0,0],
+      [0,0,1,1,1,1,0,0, 1,1,2,2,2,2,1,1, 0,2,1,3,3,1,2,0, 1,1,3,1,1,3,1,1,
+       0,1,1,2,2,1,1,0, 0,1,1,1,1,1,1,0, 1,1,1,0,0,1,1,1, 0,0,1,0,0,1,0,0],
+    ]
+  },
+  'Iron Golem': {
+    pal: ['transparent','#778899','#aaaaaa','#ccddee'],
+    frames: [
+      [0,1,1,1,1,1,1,0, 1,2,2,2,2,2,2,1, 1,2,3,2,2,3,2,1, 1,2,2,2,2,2,2,1,
+       0,1,2,1,1,2,1,0, 0,1,1,1,1,1,1,0, 0,1,0,1,1,0,1,0, 0,1,1,0,0,1,1,0],
+      [0,1,1,1,1,1,1,0, 1,2,2,2,2,2,2,1, 1,2,3,2,2,3,2,1, 0,2,2,2,2,2,2,0,
+       1,1,2,1,1,2,1,1, 0,1,1,1,1,1,1,0, 0,1,1,1,1,1,1,0, 0,1,0,0,0,0,1,0],
+      [0,1,1,1,1,1,1,0, 1,2,2,2,2,2,2,1, 0,2,3,2,2,3,2,0, 1,2,2,2,2,2,2,1,
+       0,1,2,1,1,2,1,0, 1,1,1,1,1,1,1,1, 0,1,0,1,1,0,1,0, 0,0,1,0,0,1,0,0],
+    ]
+  },
+  'Shadow Cat': {
+    pal: ['transparent','#880022','#ff2266','#ff88aa'],
+    frames: [
+      [0,0,1,0,0,1,0,0, 0,1,1,1,1,1,1,0, 1,1,2,1,1,2,1,1, 0,1,1,1,1,1,1,0,
+       0,1,3,1,1,3,1,0, 1,1,1,1,1,1,1,1, 0,1,0,0,0,0,1,0, 1,0,0,0,0,0,0,1],
+      [0,0,0,1,1,0,0,0, 0,1,1,1,1,1,1,0, 1,1,2,1,1,2,1,1, 0,1,1,1,1,1,1,0,
+       1,1,3,1,1,3,1,1, 0,1,1,1,1,1,1,0, 0,0,1,0,0,1,0,0, 0,1,1,0,0,1,1,0],
+      [0,0,1,0,0,1,0,0, 1,1,1,1,1,1,1,1, 0,1,2,1,1,2,1,0, 1,1,1,1,1,1,1,1,
+       0,1,3,1,1,3,1,0, 0,1,1,1,1,1,1,0, 1,1,0,0,0,0,1,1, 0,0,1,0,0,1,0,0],
+    ]
+  },
+  'Storm Drake': {
+    pal: ['transparent','#003388','#44aaff','#88ccff'],
+    frames: [
+      [0,0,1,1,1,1,0,0, 0,1,2,1,1,2,1,0, 1,2,1,3,3,1,2,1, 1,1,1,1,1,1,1,1,
+       0,1,2,1,1,2,1,0, 1,1,1,1,1,1,1,1, 0,1,0,1,1,0,1,0, 1,1,0,0,0,0,1,1],
+      [0,1,1,1,1,1,1,0, 0,1,2,1,1,2,1,0, 1,2,1,3,3,1,2,1, 0,1,1,1,1,1,1,0,
+       1,1,2,1,1,2,1,1, 0,1,1,1,1,1,1,0, 0,0,1,1,1,1,0,0, 0,1,0,0,0,0,1,0],
+      [0,0,1,1,1,1,0,0, 1,1,2,1,1,2,1,1, 0,2,1,3,3,1,2,0, 1,1,1,1,1,1,1,1,
+       0,1,2,1,1,2,1,0, 0,1,1,1,1,1,1,0, 1,1,1,1,1,1,1,1, 0,0,1,0,0,1,0,0],
+    ]
+  },
+  'Cyber Queen': {
+    pal: ['transparent','#997700','#ffcc00','#ffffff'],
+    frames: [
+      [0,1,1,1,1,1,1,0, 1,2,2,1,1,2,2,1, 1,1,3,2,2,3,1,1, 0,1,2,1,1,2,1,0,
+       1,1,1,1,1,1,1,1, 0,1,1,2,2,1,1,0, 0,1,0,1,1,0,1,0, 0,1,1,0,0,1,1,0],
+      [0,1,1,1,1,1,1,0, 1,2,2,1,1,2,2,1, 0,1,3,2,2,3,1,0, 1,1,2,1,1,2,1,1,
+       0,1,1,1,1,1,1,0, 1,1,1,2,2,1,1,1, 0,0,1,1,1,1,0,0, 0,1,0,0,0,0,1,0],
+      [0,1,1,1,1,1,1,0, 1,2,2,1,1,2,2,1, 1,1,3,2,2,3,1,1, 0,1,2,1,1,2,1,0,
+       1,1,1,1,1,1,1,1, 0,1,1,2,2,1,1,0, 0,1,1,1,1,1,1,0, 1,1,0,0,0,0,1,1],
+    ]
+  },
+};
+
+const _mpxCache = {};
+function getMonsterPxCanvas(name, frameIdx, w, hurt) {
+  const key = name+'_'+frameIdx+'_'+w+'_'+(hurt?1:0);
+  if (_mpxCache[key]) return _mpxCache[key];
+  const art = MPXART[name];
+  if (!art) return null;
+  const frame = art.frames[frameIdx % art.frames.length];
+  const GRID  = 8;
+  const px    = Math.max(2, Math.round(w / GRID));
+  const cvs   = document.createElement('canvas');
+  cvs.width   = GRID * px;
+  cvs.height  = GRID * px;
+  const ctx   = cvs.getContext('2d');
+  for (let y = 0; y < GRID; y++) {
+    for (let x = 0; x < GRID; x++) {
+      const ci = frame[y * GRID + x];
+      if (ci === 0) continue;
+      ctx.fillStyle = hurt ? '#ff3333' : art.pal[ci];
+      ctx.globalAlpha = hurt ? 0.85 : 1;
+      ctx.fillRect(x * px, y * px, px, px);
+    }
+  }
+  ctx.globalAlpha = 1;
+  _mpxCache[key] = cvs;
+  return cvs;
+}
+
+// ════════════════════════════════════════════════════════════════
+// CARD STATS (no solana-core dependency)
+// ════════════════════════════════════════════════════════════════
+function applyCardStats() {
+  try {
+    let equipped = null;
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith('cpk_equipped_')) {
+        try { equipped = JSON.parse(localStorage.getItem(k)); if(equipped) break; } catch(e){}
+      }
+    }
+    if (!equipped) return;
+    const p   = equipped.power || '';
+    const num = parseInt(p.replace(/[^0-9]/g,'')) || 0;
+    const pct = parseFloat(p.replace(/[^0-9.]/g,'')) || 0;
+    if (p.startsWith('ATK')) {
+      const m = 1 + num/10000;
+      WEAPON_DATA.forEach(w => { w.dmg = Math.round(w.dmg * m); });
+    } else if (p.startsWith('DEF')) {
+      maxShield = Math.round(maxShield + num*0.05); shield = maxShield;
+    } else if (p.startsWith('ALL')) {
+      const m = 1 + pct/100;
+      WEAPON_DATA.forEach(w => { w.dmg = Math.round(w.dmg * m); });
+      maxHp = Math.round(maxHp*m); hp = maxHp;
+      maxShield = Math.round(maxShield*m); shield = maxShield;
+    }
+    const hud = document.getElementById('card-hud');
+    if (hud) {
+      hud.classList.add('show');
+      const img = document.getElementById('ch-img');
+      if (img) img.src = equipped.img || '';
+      const n = document.getElementById('ch-name'); if(n) n.textContent = equipped.name||'';
+      const pw = document.getElementById('ch-pwr');  if(pw) pw.textContent = equipped.power||'';
+      const bn = document.getElementById('ch-bon');
+      if(bn) bn.textContent = p.startsWith('ATK')?'⚡+DMG': p.startsWith('DEF')?'🛡+SHIELD': p.startsWith('ALL')?'⭐+ALL STATS':'ACTIVE';
+    }
+  } catch(e) { console.warn('[Card]',e.message); }
+}
+
+function startGame(){
+  // Load weapon icons
+  WEAPON_DATA.forEach((wd,i)=>{
+    const img=document.getElementById('wi'+i);
+    if(img){ img.src=wd.icon; img.style.filter=`drop-shadow(0 0 4px ${wd.color})`; }
+  });
+
+  // Start render loop (runs behind character select screen)
+  render();
+
+  // ── Auto-start CYBER WARRIOR ──────────────────────────────────────────────
+  selectedChar = CHARACTERS[0];
+  _charChosen  = true;
+  myName       = localStorage.getItem('cpk_username') || 'CAT_PUNK';
+  maxHp        = selectedChar.hp;
+  hp           = maxHp;
+  maxShield    = selectedChar.shield;
+  shield       = maxShield;
+  WEAPON_DATA.forEach(w => { w.dmg = Math.round(w.dmg * selectedChar.dmgMult); });
+
+  chat('sys','🎮 '+MAP_CONFIG.name);
+  chat('sys','WASD / Arrows = move   SPACE = attack   L = leaderboard');
+  chat('sys','⚔️ Class: CYBER WARRIOR');
+  setTimeout(()=>{ for(let i=0;i<3;i++) spawnMonster(); }, 1200);
+}
+// ════════════════════════════════════════════════════════════════════════════
+//  MOBILE CONTROLS
+// ════════════════════════════════════════════════════════════════════════════
+(function() {
+  // ── Joystick ──────────────────────────────────────────────────────────────
+  const zone = document.getElementById('joy-zone');
+  const knob = document.getElementById('joy-knob');
+  if (!zone || !knob) return;
+
+  const MAX_R  = 44;   // px max knob travel
+  const DEAD   = 0.20; // dead zone fraction
+  const REPEAT = 110;  // ms between steps when held
+
+  let tid = null, active = false;
+  let ox = 0, oy = 0, jx = 0, jy = 0;
+  let _timer = null;
+
+  function center() {
+    const r = zone.getBoundingClientRect();
+    return { x: r.left + r.width/2, y: r.top + r.height/2 };
+  }
+
+  function setKnob(dx, dy) {
+    const dist  = Math.hypot(dx, dy);
+    const clamp = Math.min(dist, MAX_R);
+    const a     = Math.atan2(dy, dx);
+    const kx    = Math.cos(a)*clamp, ky = Math.sin(a)*clamp;
+    knob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
+    jx = dist > DEAD*MAX_R ? kx/MAX_R : 0;
+    jy = dist > DEAD*MAX_R ? ky/MAX_R : 0;
+  }
+
+  function reset() {
+    knob.style.transform = 'translate(-50%,-50%)';
+    knob.classList.remove('active');
+    jx = 0; jy = 0; active = false; tid = null;
+    clearInterval(_timer); _timer = null;
+  }
+
+  function step() {
+    if (!active || (Math.abs(jx) < DEAD && Math.abs(jy) < DEAD)) return;
+    const mW = MAP_CONFIG.width  || MAP_W;
+    const mH = MAP_CONFIG.height || MAP_H;
+    let nx = pTile.x, ny = pTile.y, dir = pDir;
+    if (Math.abs(jx) >= Math.abs(jy)) {
+      if (jx > 0) { nx++; dir = 0; } else { nx--; dir = 1; }
+    } else {
+      if (jy > 0) { ny++; dir = 2; } else { ny--; dir = 3; }
+    }
+    if (nx < 0 || ny < 0 || nx >= mW || ny >= mH) return;
+    if (isSolidDungeonTile(nx, ny)) return;
+    if (!_dungeonLoaded && !walkable(gameMap[ny]?.[nx] ?? 0)) return;
+    pTile.x = nx; pTile.y = ny;
+    pPos.x  = nx; pPos.y  = ny;
+    pDir    = dir;
+    if (typeof sendPlayerState === 'function') sendPlayerState();
+  }
+
+  zone.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (active) return;
+    const t  = e.changedTouches[0];
+    tid      = t.identifier;
+    active   = true;
+    knob.classList.add('active');
+    const c  = center();
+    ox = c.x; oy = c.y;
+    setKnob(t.clientX - ox, t.clientY - oy);
+    clearInterval(_timer);
+    step();
+    _timer = setInterval(step, REPEAT);
+  }, {passive:false});
+
+  zone.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches)
+      if (t.identifier === tid) { setKnob(t.clientX - ox, t.clientY - oy); break; }
+  }, {passive:false});
+
+  zone.addEventListener('touchend',    e => { for(const t of e.changedTouches) if(t.identifier===tid){reset();break;} }, {passive:false});
+  zone.addEventListener('touchcancel', reset, {passive:false});
+
+  // ── Attack button ─────────────────────────────────────────────────────────
+  let _atkTimer = null;
+  window.mbAtkStart = function(e) {
+    e.preventDefault();
+    document.getElementById('btn-atk').classList.add('pressing');
+    if (typeof attackNearbyMonster === 'function') attackNearbyMonster();
+    _atkTimer = setInterval(() => {
+      if (typeof attackNearbyMonster === 'function') attackNearbyMonster();
+    }, 380);
+  };
+  window.mbAtkEnd = function(e) {
+    e.preventDefault();
+    document.getElementById('btn-atk').classList.remove('pressing');
+    clearInterval(_atkTimer); _atkTimer = null;
+  };
+
+  // ── Skill button ──────────────────────────────────────────────────────────
+  window.mbSkill = function(e) {
+    e.preventDefault();
+    document.getElementById('btn-skill').classList.add('pressing');
+    // Trigger SPACE key (dash / use skill)
+    keys[' '] = true;
+    setTimeout(() => { keys[' '] = false; }, 150);
+  };
+
+  // ── Block pinch/scroll on canvas ─────────────────────────────────────────
+  const gc = document.getElementById('gc');
+  if (gc) {
+    gc.addEventListener('touchstart', e => e.preventDefault(), {passive:false});
+    gc.addEventListener('touchmove',  e => e.preventDefault(), {passive:false});
+  }
+
+  console.log('[Mobile] Controls ready');
+})();
+
+</script>
+</body>
+</html>s
