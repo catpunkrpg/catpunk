@@ -2382,7 +2382,7 @@ setInterval(() => {
 
 // Monster spawn - every 7 seconds if below max
 setInterval(()=>{
-  if(!useServerMonsters && monsters.length < 4) spawnMonster();
+  if(!useServerMonsters && monsters.length < 7) spawnMonster();
 },4000);
 setInterval(()=>{
   if(hp<maxHp){hp=Math.min(maxHp,hp+5);updateBars();}
@@ -2409,7 +2409,7 @@ setInterval(()=>{
     if (!_charChosen) {
       hp = p.hp; maxHp = p.maxHp;
     }
-    useServerMonsters = true;
+    // useServerMonsters = true; // disabled
     monsters.length = 0;
     chat('sys', '🌐 Connected! ' + Object.keys(data.players||{}).length + ' player(s) online');
     updateBars(); updateStats();
