@@ -1383,29 +1383,19 @@ async function loadRealStats() {
     console.log('[Stats] Server offline, using local data only');
   }
 
-  // ── 3. Merge: server + local + baseline ──────────────────────────
-  // Baseline: angka minimum yang masuk akal untuk game baru
-  const BASELINE_PLAYERS  = 847;
-  const BASELINE_CARDS    = 2340;
-  const BASELINE_STAKED   = 890000;
-  const BASELINE_DUNGEONS = 1280;
-
+  // ── 3. Merge: server + local — 100% data real, tanpa baseline ───
   _cachedStats = {
-    // Active players: server real-time + baseline
-    onlinePlayers : (serverStats.onlinePlayers || 0) + BASELINE_PLAYERS,
+    // Active players: real-time dari server
+    onlinePlayers   : serverStats.onlinePlayers || 0,
 
-    // Cards minted: mint lokal + server estimate + baseline
-    cardsMinted   : cardsMintedLocal
-                  + (serverStats.cardsMinted || 0)
-                  + BASELINE_CARDS,
+    // Cards minted: dari localStorage mint.html saja (data nyata)
+    cardsMinted     : cardsMintedLocal + (serverStats.cardsMinted || 0),
 
-    // CPUNK staked: local staking + server estimate + baseline
-    cpunkStaked   : cpunkStakedLocal
-                  + (serverStats.cpunkStaked || 0)
-                  + BASELINE_STAKED,
+    // CPUNK staked: dari localStorage staking.html saja
+    cpunkStaked     : cpunkStakedLocal + (serverStats.cpunkStaked || 0),
 
-    // Dungeons cleared: server kills / 10 + baseline
-    dungeonsCleared : (serverStats.dungeonsCleared || 0) + BASELINE_DUNGEONS,
+    // Dungeons cleared: dari server tracking monster kills
+    dungeonsCleared : serverStats.dungeonsCleared || 0,
   };
 
   return _cachedStats;
@@ -1435,10 +1425,7 @@ const revealObserver = new IntersectionObserver((entries) => {
         fireCounters(_cachedStats);
       } else {
         // Tampilkan baseline dulu, update saat data tiba
-        fireCounters({ onlinePlayers:847, cardsMinted:2340, cpunkStaked:890000, dungeonsCleared:1280 });
-        loadRealStats().then(stats => {
-          setTimeout(() => fireCounters(stats), 400); // animate ulang dengan angka real
-        });
+        loadRealStats().then(stats => fireCounters(stats));
       }
     }
   });

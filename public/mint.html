@@ -653,6 +653,12 @@ async function executeMint() {
 
     showToast('🎉 NFT minted successfully!');
 
+    // Notify game server supaya stats counter update di index.html
+    try {
+      const sock = window._gameSocket || (typeof io !== 'undefined' && io(window.location.origin, { transports:['websocket'], reconnection:false }));
+      if (sock) { sock.emit('mintCard'); window._gameSocket = sock; }
+    } catch(e) {}
+
     // Rebuild grid
     buildGrid();
     document.getElementById('ph-owned').textContent = JSON.parse(localStorage.getItem('cpk_devnet_nfts') || '[]').length;

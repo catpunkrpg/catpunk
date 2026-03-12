@@ -100,10 +100,10 @@ app.get('/api/stats', (req, res) => {
     monstersKilled  : globalStats.totalMonstersKilled,
     pvpKills        : globalStats.totalPvpKills,
     dungeonsCleared : globalStats.dungeonsCleared,
-    // Cards minted: dari NFT_CARDS.length * sessions sebagai estimasi
-    // (real data butuh on-chain query)
-    cardsMinted     : Math.min(46, Math.floor(globalStats.totalSessions * 1.2)),
-    cpunkStaked     : globalStats.totalSessions * 500 + globalStats.totalMonstersKilled * 10,
+    // Cards minted: dihitung dari event mint yang dikirim client
+    // (client kirim 'mintCard' event saat berhasil mint)
+    cardsMinted     : globalStats.totalCardsMinted,
+    cpunkStaked     : globalStats.totalCpunkStaked,
   });
 });
 
@@ -137,6 +137,8 @@ const globalStats = {
   dungeonsCleared     : 0,  // increment tiap 10 monster kills
   peakOnline          : 0,  // max players pernah online bersamaan
   totalSessions       : 0,  // increment tiap player connect
+  totalCardsMinted    : 0,  // increment saat client kirim event 'mintCard'
+  totalCpunkStaked    : 0,  // total $CPUNK yang di-stake (dikirim client)
 };
 
 // Monster roster — names match MONSTER_SPRITES in game.html for pixel-art fallback
@@ -345,6 +347,18 @@ io.on('connection', (socket) => {
 
   // ── pvpKill — no-op (handled server-side above) ───────────────────────────
   socket.on('pvpKill', () => {});
+
+  // Track card mints dari client (dipanggil oleh mint.html setelah berhasil mint)
+  socket.on('mintCard', () => {
+    globalStats.totalCardsMinted++;
+  });
+
+  // Track staking dari client (dipanggil oleh staking.html)
+  socket.on('stakeTokens', (data) => {
+    if (data && typeof data.amount === 'number' && data.amount > 0) {
+      globalStats.totalCpunkStaked += data.amount;
+    }
+  });
 
   // ── chat ──────────────────────────────────────────────────────────────────
   socket.on('chat', (data) => {
