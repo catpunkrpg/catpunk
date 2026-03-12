@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cat Punk — Mint NFT Cards · Devnet Demo</title>
+<title>CatPunk — Mint NFT Cards · Devnet</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <script src="https://bundle.run/buffer@6.0.3"></script>
 <script>window.Buffer = window.Buffer || buffer.Buffer;</script>
@@ -402,6 +402,29 @@ body { padding-top: 54px; }
 
   <!-- RANDOM MINT BUTTON -->
   <div id="random-mint-section" style="text-align:center;padding:40px 20px;">
+
+    <!-- WALLET NOT CONNECTED — tampil di sini langsung, bukan di modal -->
+    <div id="rms-wallet-needed" style="display:none;max-width:420px;margin:0 auto 32px;padding:24px;background:var(--panel);border:2px solid var(--border);">
+      <div style="font-size:9px;color:var(--gold);margin-bottom:16px;letter-spacing:2px;">⚠️ CONNECT YOUR WALLET</div>
+      <div style="font-family:'VT323',monospace;font-size:17px;color:var(--dim);margin-bottom:20px;line-height:1.6;">
+        Connect your Solana wallet to mint NFT cards.
+      </div>
+      <div id="rms-wallet-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+    <!-- DEVNET BADGE -->
+    <div style="max-width:420px;margin:0 auto 24px;padding:12px 14px;background:#0d0a1a;border:2px solid rgba(155,48,255,.4);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="width:8px;height:8px;background:#9b30ff;border-radius:50%;box-shadow:0 0 6px #9b30ff;"></span>
+        <span style="font-size:7px;color:#9b30ff;font-family:'Press Start 2P',monospace;">DEVNET DEMO MODE</span>
+      </div>
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#5a5a8a;line-height:1.6;">
+        This mint uses Solana <strong style="color:#9b30ff;">Devnet</strong> — no real money required.<br>
+        You need devnet SOL (~0.05 SOL) to pay the tx fee.
+        <a href="https://faucet.solana.com" target="_blank" style="color:#9b30ff;display:block;margin-top:8px;font-size:7px;font-family:'Press Start 2P',monospace;">💧 GET FREE DEVNET SOL ↗</a>
+      </div>
+    </div>
+
     <div id="random-preview" style="
       width:200px;height:200px;margin:0 auto 24px;
       border:3px solid var(--border);background:var(--panel);
@@ -418,27 +441,27 @@ body { padding-top: 54px; }
       🎲 RANDOM MINT
     </button>
     <div style="margin-top:14px;font-family:'VT323',monospace;font-size:16px;color:var(--dim);">
-      Mint a random card · Common → Legendary
+      Get a random card from a pool of 46 cards · Common → Legendary
     </div>
     <div style="margin-top:8px;font-size:8px;color:var(--dim);">
-      🟣 Rarity: Common 43% · Rare 26% · Epic 22% · Legendary 9%
+      🟣 Drop Rates: Common 43% · Rare 26% · Epic 22% · Legendary 9%
     </div>
 
     <!-- Steps -->
     <div class="mint-status" id="mint-status" style="margin-top:20px;max-width:300px;margin-left:auto;margin-right:auto;">
-      <div class="ms-step" id="mstep1"><div class="ms-dot" id="mdot1"></div><span>Mempersiapkan transaksi...</span></div>
-      <div class="ms-step" id="mstep2"><div class="ms-dot" id="mdot2"></div><span>Menunggu konfirmasi wallet...</span></div>
-      <div class="ms-step" id="mstep3"><div class="ms-dot" id="mdot3"></div><span>Broadcasting ke Solana...</span></div>
-      <div class="ms-step" id="mstep4"><div class="ms-dot" id="mdot4"></div><span>Konfirmasi on-chain...</span></div>
-      <div class="ms-step" id="mstep5"><div class="ms-dot" id="mdot5"></div><span>Minting NFT ke wallet...</span></div>
+      <div class="ms-step" id="mstep1"><div class="ms-dot" id="mdot1"></div><span>Preparing transaction...</span></div>
+      <div class="ms-step" id="mstep2"><div class="ms-dot" id="mdot2"></div><span>Waiting for wallet approval...</span></div>
+      <div class="ms-step" id="mstep3"><div class="ms-dot" id="mdot3"></div><span>Broadcasting to Solana...</span></div>
+      <div class="ms-step" id="mstep4"><div class="ms-dot" id="mdot4"></div><span>Confirming on-chain...</span></div>
+      <div class="ms-step" id="mstep5"><div class="ms-dot" id="mdot5"></div><span>Minting NFT to wallet...</span></div>
     </div>
 
     <!-- Success -->
     <div class="mint-success" id="mint-success" style="margin-top:20px;">
       <div class="ms-icon">🎉</div>
-      <div class="ms-title">MINT BERHASIL!</div>
+      <div class="ms-title">MINT SUCCESSFUL!</div>
       <div class="ms-tx" id="ms-tx-info">—</div>
-      <button class="mint-btn" onclick="resetRandom()" style="margin-top:0;">🎲 MINT LAGI</button>
+      <button class="mint-btn" onclick="resetRandom()" style="margin-top:0;">🎲 MINT AGAIN</button>
     </div>
   </div>
 
@@ -446,7 +469,7 @@ body { padding-top: 54px; }
   <div class="cards-grid" id="cards-grid" style="display:none;"></div>
 </div>
 
-<!-- MINT MODAL (hidden, tidak dipakai tapi jangan hapus) -->
+<!-- MINT MODAL (hidden, kept for DOM reference) -->
 <div class="modal-overlay" id="mint-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
@@ -515,17 +538,17 @@ body { padding-top: 54px; }
 
         <!-- Steps -->
         <div class="mint-status" id="mint-status">
-          <div class="ms-step" id="mstep1"><div class="ms-dot" id="mdot1"></div><span>Mempersiapkan transaksi...</span></div>
-          <div class="ms-step" id="mstep2"><div class="ms-dot" id="mdot2"></div><span>Menunggu konfirmasi wallet...</span></div>
-          <div class="ms-step" id="mstep3"><div class="ms-dot" id="mdot3"></div><span>Broadcasting ke Solana...</span></div>
-          <div class="ms-step" id="mstep4"><div class="ms-dot" id="mdot4"></div><span>Konfirmasi on-chain...</span></div>
-          <div class="ms-step" id="mstep5"><div class="ms-dot" id="mdot5"></div><span>Minting NFT ke wallet...</span></div>
+          <div class="ms-step" id="mstep1"><div class="ms-dot" id="mdot1"></div><span>Preparing transaction...</span></div>
+          <div class="ms-step" id="mstep2"><div class="ms-dot" id="mdot2"></div><span>Waiting for wallet approval...</span></div>
+          <div class="ms-step" id="mstep3"><div class="ms-dot" id="mdot3"></div><span>Broadcasting to Solana...</span></div>
+          <div class="ms-step" id="mstep4"><div class="ms-dot" id="mdot4"></div><span>Confirming on-chain...</span></div>
+          <div class="ms-step" id="mstep5"><div class="ms-dot" id="mdot5"></div><span>Minting NFT to wallet...</span></div>
         </div>
 
         <!-- Success -->
         <div class="mint-success" id="mint-success">
           <div class="ms-icon">🎉</div>
-          <div class="ms-title">MINT BERHASIL!</div>
+          <div class="ms-title">MINT SUCCESSFUL!</div>
           <div class="ms-tx" id="ms-tx-info">—</div>
           <button class="mint-btn" onclick="closeModal()" style="margin-top:0;">CLOSE</button>
         </div>
@@ -676,7 +699,15 @@ async function animateReveal(card) {
 }
 
 async function doRandomMint() {
-  if (!CatPunkWallet.connected) { handleNavWallet(); return; }
+  if (!CatPunkWallet.connected) {
+    // Tampilkan wallet list langsung di halaman, bukan scroll ke modal
+    document.getElementById('rms-wallet-needed').style.display = 'block';
+    renderWalletOptions();
+    document.getElementById('rms-wallet-needed').scrollIntoView({ behavior:'smooth' });
+    return;
+  }
+  // Hide wallet section once connected
+  document.getElementById('rms-wallet-needed').style.display = 'none';
   const card = pickRandomCard();
   selectedCard = card;
   const btn = document.getElementById('mint-btn');
@@ -691,7 +722,7 @@ async function doRandomMint() {
   try {
     setStep(1);
     const result = await mintNFTCard(card, (msg) => {
-      if (msg.includes('Mempersiapkan')) setStep(1);
+      if (msg.includes('Preparing')) setStep(1);
       else if (msg.includes('Approve') || msg.includes('wallet')) setStep(2);
       else if (msg.includes('Broadcast')) setStep(3);
       else if (msg.includes('Confirming') || msg.includes('Confirm')) setStep(4);
@@ -702,7 +733,7 @@ async function doRandomMint() {
     document.getElementById('mint-success').classList.add('show');
     const col = RARITY_COLOR_MAP[card.rarity] || '#6a6a9a';
     document.getElementById('ms-tx-info').innerHTML = `
-      <span style="color:${col};">[${card.rarity.toUpperCase()}]</span> <strong>${card.name}</strong> berhasil di-mint!<br><br>
+      <span style="color:${col};">[${card.rarity.toUpperCase()}]</span> <strong>${card.name}</strong> successfully minted!<br><br>
       TX: <a href="${result.txUrl}" target="_blank" style="color:var(--cyan);">${result.txHash.slice(0,16)}...${result.txHash.slice(-8)} ↗</a>
     `;
     showToast('🎉 ' + card.name + ' minted!');
@@ -733,7 +764,7 @@ function resetRandom() {
   selectedCard = null; resetMintSteps();
 }
 
-// legacy — tidak dipakai tapi jangan hapus (modal masih ada di DOM)
+// legacy — kept for DOM compatibility
 async function executeMint() { doRandomMint(); }
 
 function resetMintSteps() {
@@ -755,7 +786,8 @@ function setStepDone(n) {
 
 // ── NAV WALLET ────────────────────────────────────────────────────────────────
 function renderWalletOptions() {
-  ['wn-wallet-list'].forEach(id => {
+  // Populate semua wallet list: modal + inline random mint section
+  ['wn-wallet-list', 'rms-wallet-list'].forEach(id => {
     const list = document.getElementById(id);
     if (!list) return;
     list.innerHTML = '';
@@ -821,10 +853,17 @@ function showToast(msg, type='ok') {
 buildGrid();
 renderWalletOptions();
 
+// Show wallet section on load if not connected
+if (!CatPunkWallet.connected) {
+  document.getElementById('rms-wallet-needed').style.display = 'block';
+}
+
 CatPunkWallet.on('connected', async () => {
   const btn = document.getElementById('nav-wallet-btn');
   btn.textContent = formatAddress(CatPunkWallet.publicKeyStr) + ' ✓';
   btn.className = 'nav-wallet-btn connected';
+  // Sembunyikan wallet connect section
+  document.getElementById('rms-wallet-needed').style.display = 'none';
   await fetchWalletNFTs();
   buildGrid();
 });
