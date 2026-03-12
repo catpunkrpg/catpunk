@@ -85,29 +85,6 @@ app.post('/api/map', (req, res) => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  API — PUBLIC STATS ENDPOINT
-// ═════════════════════════════════════════════════════════════════════════════
-
-// GET /api/stats — real-time game statistics untuk index.html
-app.get('/api/stats', (req, res) => {
-  // Ambil data mint dari localStorage tidak bisa dari server,
-  // tapi kita bisa hitung dari jumlah sessions + kills
-  const onlineNow = Object.keys(players).length;
-  res.json({
-    onlinePlayers   : onlineNow,
-    peakOnline      : globalStats.peakOnline,
-    totalSessions   : globalStats.totalSessions,
-    monstersKilled  : globalStats.totalMonstersKilled,
-    pvpKills        : globalStats.totalPvpKills,
-    dungeonsCleared : globalStats.dungeonsCleared,
-    // Cards minted: dihitung dari event mint yang dikirim client
-    // (client kirim 'mintCard' event saat berhasil mint)
-    cardsMinted     : globalStats.totalCardsMinted,
-    cpunkStaked     : globalStats.totalCpunkStaked,
-  });
-});
-
-// ═════════════════════════════════════════════════════════════════════════════
 //  GAME CONFIGURATION
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -125,21 +102,6 @@ const MAX_MONSTERS = 12;
 const players  = {};
 const monsters = {};
 let   monCtr   = 0;
-
-// ═══════════════════════════════════════════════════════
-//  GLOBAL STATS — real data untuk index.html
-//  Persist in-memory; reset on server restart
-//  (Untuk persistent: ganti dengan file JSON atau DB)
-// ═══════════════════════════════════════════════════════
-const globalStats = {
-  totalMonstersKilled : 0,  // increment saat monsterKilled
-  totalPvpKills       : 0,  // increment saat pvpKill
-  dungeonsCleared     : 0,  // increment tiap 10 monster kills
-  peakOnline          : 0,  // max players pernah online bersamaan
-  totalSessions       : 0,  // increment tiap player connect
-  totalCardsMinted    : 0,  // increment saat client kirim event 'mintCard'
-  totalCpunkStaked    : 0,  // total $CPUNK yang di-stake (dikirim client)
-};
 
 // Monster roster — names match MONSTER_SPRITES in game.html for pixel-art fallback
 const MON_TYPES = ['Cyber Bat', 'Data Dragon', 'Death Bot', 'Glitch Beast', 'Neon Wolf'];
@@ -205,10 +167,6 @@ for (let i = 0; i < 8; i++) spawnMonster();
 
 io.on('connection', (socket) => {
   const spawn = randTile();
-  // Track sessions & peak online
-  globalStats.totalSessions++;
-  const online = Object.keys(players).length + 1;
-  if (online > globalStats.peakOnline) globalStats.peakOnline = online;
 
   players[socket.id] = {
     id:         socket.id,
@@ -316,8 +274,6 @@ io.on('connection', (socket) => {
           io.emit('playerLevelUp', { playerId: socket.id, level: attacker.level });
         }
         spawnMonster(id); // respawn same id
-        globalStats.totalMonstersKilled++;
-        if (globalStats.totalMonstersKilled % 10 === 0) globalStats.dungeonsCleared++;
         io.emit('monsterKilled', { monsterId: id, killerId: socket.id, newMonster: monsters[id] });
       }
     }
@@ -340,25 +296,12 @@ io.on('connection', (socket) => {
       tgt.hp = tgt.maxHp; tgt.x = s.x; tgt.y = s.y;
       io.emit('playerDeath', { playerId: data.targetId, killerId: socket.id });
       atk.xp += 50;
-      globalStats.totalPvpKills++;
       socket.emit('pvpKill', { targetName: tgt.username, xp: 50 });
     }
   });
 
   // ── pvpKill — no-op (handled server-side above) ───────────────────────────
   socket.on('pvpKill', () => {});
-
-  // Track card mints dari client (dipanggil oleh mint.html setelah berhasil mint)
-  socket.on('mintCard', () => {
-    globalStats.totalCardsMinted++;
-  });
-
-  // Track staking dari client (dipanggil oleh staking.html)
-  socket.on('stakeTokens', (data) => {
-    if (data && typeof data.amount === 'number' && data.amount > 0) {
-      globalStats.totalCpunkStaked += data.amount;
-    }
-  });
 
   // ── chat ──────────────────────────────────────────────────────────────────
   socket.on('chat', (data) => {
@@ -457,4 +400,22 @@ server.listen(PORT, () => {
   console.log(`   🗺️   http://localhost:${PORT}/map-editor.html`);
   console.log('═══════════════════════════════════════════');
   console.log('');
+
+  // ── RENDER FREE TIER: Keep-alive ping ──────────────────────────
+  // Render free tier tidur setelah 15 menit idle.
+  // Ping diri sendiri setiap 10 menit supaya tetap aktif.
+  if (process.env.RENDER_EXTERNAL_URL) {
+    const https = require('https');
+    const http  = require('http');
+    const url   = process.env.RENDER_EXTERNAL_URL;
+    setInterval(() => {
+      const client = url.startsWith('https') ? https : http;
+      client.get(url + '/api/stats', (res) => {
+        console.log('[Keep-alive] ping OK —', res.statusCode);
+      }).on('error', (e) => {
+        console.log('[Keep-alive] ping error:', e.message);
+      });
+    }, 10 * 60 * 1000); // setiap 10 menit
+    console.log('[Keep-alive] aktif, ping ke:', url);
+  }
 });
